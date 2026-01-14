@@ -1,12 +1,13 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { BookOpen, LayoutDashboard, LogOut, GraduationCap } from 'lucide-react';
+import { BookOpen, LayoutDashboard, LogOut, GraduationCap, Award, Users, BarChart3 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -14,6 +15,14 @@ const Navbar = () => {
   };
 
   if (!isAuthenticated) return null;
+
+  const getDashboardLink = () => {
+    if (user?.role === 'admin') return '/admin';
+    if (user?.role === 'instructor') return '/instructor/dashboard';
+    return '/dashboard';
+  };
+
+  const isActive = (path: string) => location.pathname.startsWith(path);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card/80 backdrop-blur-md">
@@ -29,19 +38,71 @@ const Navbar = () => {
 
         <nav className="hidden md:flex items-center gap-6">
           <Link
-            to={user?.role === 'admin' ? '/admin' : '/dashboard'}
-            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            to={getDashboardLink()}
+            className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+              isActive(getDashboardLink()) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+            }`}
           >
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
           </Link>
+          
+          {user?.role === 'instructor' && (
+            <Link
+              to="/instructor/courses"
+              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                isActive('/instructor/courses') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <BookOpen className="h-4 w-4" />
+              My Courses
+            </Link>
+          )}
+
+          {user?.role === 'admin' && (
+            <>
+              <Link
+                to="/admin/analytics"
+                className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                  isActive('/admin/analytics') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <BarChart3 className="h-4 w-4" />
+                Analytics
+              </Link>
+              <Link
+                to="/admin/users"
+                className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                  isActive('/admin/users') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Users className="h-4 w-4" />
+                Users
+              </Link>
+            </>
+          )}
+
           <Link
             to="/courses"
-            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+              isActive('/courses') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+            }`}
           >
             <BookOpen className="h-4 w-4" />
             Courses
           </Link>
+
+          {user?.role === 'user' && (
+            <Link
+              to="/certificates"
+              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                isActive('/certificates') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Award className="h-4 w-4" />
+              Certificates
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-4">

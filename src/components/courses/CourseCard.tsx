@@ -23,6 +23,8 @@ const CourseCard = ({ course, showProgress = false }: CourseCardProps) => {
     Advanced: 'bg-primary/10 text-primary border-primary/20',
   };
 
+  const moduleCount = course.modules?.length || 0;
+
   return (
     <Card className="group overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 animate-fade-in">
       <div className="relative overflow-hidden">
@@ -31,16 +33,11 @@ const CourseCard = ({ course, showProgress = false }: CourseCardProps) => {
           alt={course.title}
           className="h-48 w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        <Badge
-          variant="outline"
-          className={`absolute top-3 left-3 ${levelColors[course.level]}`}
-        >
+        <Badge variant="outline" className={`absolute top-3 left-3 ${levelColors[course.level]}`}>
           {course.level}
         </Badge>
         {enrolled && (
-          <Badge className="absolute top-3 right-3 bg-success text-success-foreground">
-            Enrolled
-          </Badge>
+          <Badge className="absolute top-3 right-3 bg-success text-success-foreground">Enrolled</Badge>
         )}
       </div>
 
@@ -49,9 +46,7 @@ const CourseCard = ({ course, showProgress = false }: CourseCardProps) => {
         <h3 className="font-display text-lg font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
           {course.title}
         </h3>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-          {course.description}
-        </p>
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{course.description}</p>
 
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
@@ -60,7 +55,7 @@ const CourseCard = ({ course, showProgress = false }: CourseCardProps) => {
           </span>
           <span className="flex items-center gap-1">
             <BookOpen className="h-3.5 w-3.5" />
-            {course.modules} modules
+            {moduleCount} modules
           </span>
           <span className="flex items-center gap-1">
             <Star className="h-3.5 w-3.5 fill-accent text-accent" />
@@ -84,12 +79,7 @@ const CourseCard = ({ course, showProgress = false }: CourseCardProps) => {
           <Link to={`/course/${course.id}`}>View Details</Link>
         </Button>
         {!enrolled && (
-          <Button
-            variant="default"
-            size="sm"
-            className="flex-1"
-            onClick={() => enrollInCourse(course.id)}
-          >
+          <Button variant="default" size="sm" className="flex-1" onClick={() => enrollInCourse(course.id)}>
             Enroll Now
           </Button>
         )}

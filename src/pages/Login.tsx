@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GraduationCap, Mail, Lock, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'user' | 'admin'>('user');
+  const [role, setRole] = useState<'user' | 'admin' | 'instructor'>('user');
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -27,7 +27,13 @@ const Login = () => {
     const success = login(email, password, role);
     if (success) {
       toast.success(`Welcome back!`);
-      navigate(role === 'admin' ? '/admin' : '/dashboard');
+      if (role === 'admin') {
+        navigate('/admin');
+      } else if (role === 'instructor') {
+        navigate('/instructor/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } else {
       toast.error('Invalid credentials. Password must be at least 4 characters.');
     }
@@ -86,9 +92,10 @@ const Login = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs value={role} onValueChange={(v) => setRole(v as 'user' | 'admin')} className="mb-6">
-                <TabsList className="grid w-full grid-cols-2">
+              <Tabs value={role} onValueChange={(v) => setRole(v as typeof role)} className="mb-6">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="user">Student</TabsTrigger>
+                  <TabsTrigger value="instructor">Instructor</TabsTrigger>
                   <TabsTrigger value="admin">Admin</TabsTrigger>
                 </TabsList>
               </Tabs>
