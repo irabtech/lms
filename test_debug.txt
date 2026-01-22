@@ -1,0 +1,8 @@
+Testing connection to: https://jeqotvuzlygdrexfduct.supabase.co
+
+--- Fetching ALL Courses (Raw) ---
+Total Courses in DB: 1
+- [6652e74e-77b1-4e52-aad8-1ef8f70bc176] Introduction to Wordpress (Published: true, Instructor: ac3e6864-5684-4578-aabe-7c771f872603)
+
+--- Enrollment Logic Test ---
+Visible Enrollments (Anonymous): 0

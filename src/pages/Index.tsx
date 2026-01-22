@@ -1,20 +1,28 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { user, hasRole, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(user?.role === 'admin' ? '/admin' : '/dashboard');
+    if (isLoading) return;
+
+    if (user) {
+      if (hasRole('ADMIN')) {
+        navigate('/admin');
+      } else if (hasRole('INSTRUCTOR')) {
+        navigate('/instructor/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } else {
       navigate('/login');
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [user, hasRole, isLoading, navigate]);
 
-  return null;
+  return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
 };
 
 export default Index;

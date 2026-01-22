@@ -1,5 +1,5 @@
-import { useAuth } from '@/context/AuthContext';
-import { useCourses } from '@/context/CourseContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCourses } from '@/contexts/CourseContext';
 import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,7 +20,7 @@ const CertificatesList = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-display font-bold mb-2">My Certificates</h1>

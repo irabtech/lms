@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
-import { useCourses } from '@/context/CourseContext';
-import { useAuth } from '@/context/AuthContext';
+import { useCourses } from '@/contexts/CourseContext';
+import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 const CourseDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { getCourse, isEnrolled, getEnrollment, enrollInCourse, unenrollFromCourse, getCourseCompletionStatus, getQuiz } = useCourses();
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
 
   const course = getCourse(id || '');
   const enrolled = isEnrolled(id || '');
@@ -97,7 +97,7 @@ const CourseDetail = () => {
                   {enrolled ? (
                     <>
                       <Button className="w-full" size="lg"><Play className="h-4 w-4" />Continue Learning</Button>
-                      {user?.role === 'user' && (
+                      {hasRole('STUDENT') && (
                         <Button variant="outline" className="w-full" onClick={handleUnenroll}>Unenroll</Button>
                       )}
                     </>
@@ -158,7 +158,7 @@ const CourseDetail = () => {
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="text-xs text-muted-foreground">{lesson.duration}</span>
-                                {hasQuiz && user?.role === 'user' && (
+                                {hasQuiz && hasRole('STUDENT') && (
                                   <Button asChild size="sm" variant="ghost" className="h-6 text-xs">
                                     <Link to={`/course/${course.id}/quiz/${lesson.id}`}>Take Quiz</Link>
                                   </Button>

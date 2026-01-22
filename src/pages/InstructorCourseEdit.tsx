@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useCourses } from '@/context/CourseContext';
+import { useCourses } from '@/contexts/CourseContext';
 import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,11 +16,12 @@ import { toast } from 'sonner';
 
 const InstructorCourseEdit = () => {
   const { id } = useParams<{ id: string }>();
-  const { getCourse, updateCourse, addModule, removeModule, addLesson, removeLesson, getCourseEnrollments } = useCourses();
-  
+  const { getCourse, updateCourse, addModule, removeModule, addLesson, removeLesson } = useCourses();
+
   const course = getCourse(id || '');
-  const enrollments = getCourseEnrollments(id || '');
-  
+  // Using course.enrolledCount instead of fetching list
+
+
   const [isModuleDialogOpen, setIsModuleDialogOpen] = useState(false);
   const [isLessonDialogOpen, setIsLessonDialogOpen] = useState(false);
   const [selectedModuleId, setSelectedModuleId] = useState<string>('');
@@ -39,20 +40,26 @@ const InstructorCourseEdit = () => {
     );
   }
 
-  const handleAddModule = () => {
+  const handleAddModule = async () => {
     if (!newModule.title) { toast.error('Module title is required'); return; }
-    addModule(course.id, newModule);
-    setNewModule({ title: '', description: '' });
-    setIsModuleDialogOpen(false);
-    toast.success('Module added!');
+    try {
+      await addModule(course.id, newModule);
+      setNewModule({ title: '', description: '' });
+      setIsModuleDialogOpen(false);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const handleAddLesson = () => {
+  const handleAddLesson = async () => {
     if (!newLesson.title || !selectedModuleId) { toast.error('Lesson title is required'); return; }
-    addLesson(course.id, selectedModuleId, newLesson);
-    setNewLesson({ title: '', duration: '', contentType: 'video' });
-    setIsLessonDialogOpen(false);
-    toast.success('Lesson added!');
+    try {
+      await addLesson(course.id, selectedModuleId, newLesson);
+      setNewLesson({ title: '', duration: '', contentType: 'video' });
+      setIsLessonDialogOpen(false);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const openLessonDialog = (moduleId: string) => {
@@ -65,7 +72,7 @@ const InstructorCourseEdit = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container py-8">
         <Link to="/instructor/courses" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
           <ArrowLeft className="h-4 w-4" /> Back to Courses
@@ -148,7 +155,7 @@ const InstructorCourseEdit = () => {
                         <AccordionContent>
                           <div className="pl-10 space-y-2 mb-4">
                             {module.lessons.map((lesson) => {
-                              const Icon = contentTypeIcons[lesson.contentType];
+                              const Icon = contentTypeIcons[lesson.type];
                               return (
                                 <div key={lesson.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
                                   <div className="flex items-center gap-3">
@@ -191,7 +198,7 @@ const InstructorCourseEdit = () => {
                 <div className="flex items-center gap-4">
                   <div className="gradient-primary rounded-xl p-3 text-primary-foreground"><Users className="h-5 w-5" /></div>
                   <div>
-                    <p className="text-2xl font-bold">{enrollments.length}</p>
+                    <p className="text-2xl font-bold">{course.enrolledCount}</p>
                     <p className="text-sm text-muted-foreground">students enrolled</p>
                   </div>
                 </div>

@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { useCourses } from '@/context/CourseContext';
+import { useCourses } from '@/contexts/CourseContext';
 import Navbar from '@/components/layout/Navbar';
 import CourseCard from '@/components/courses/CourseCard';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter } from 'lucide-react';
 
 const Courses = () => {
-  const { courses } = useCourses();
+  const { courses, isLoading, error } = useCourses();
   const [search, setSearch] = useState('');
   const [levelFilter, setLevelFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -34,10 +35,10 @@ const Courses = () => {
             Explore Our Courses
           </h1>
           <p className="text-lg opacity-90 max-w-2xl mx-auto mb-8">
-            Discover world-class courses taught by industry experts. 
+            Discover world-class courses taught by industry experts.
             Start learning today and transform your career.
           </p>
-          
+
           {/* Search Bar */}
           <div className="relative max-w-xl mx-auto">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -59,7 +60,7 @@ const Courses = () => {
             <Filter className="h-4 w-4" />
             <span>Filter by:</span>
           </div>
-          
+
           <Select value={levelFilter} onValueChange={setLevelFilter}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Level" />
@@ -89,14 +90,33 @@ const Courses = () => {
           </Badge>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {!isLoading && error && (
+          <div className="text-center py-20 bg-destructive/5 rounded-xl border border-destructive/20">
+            <h3 className="text-lg font-semibold text-destructive mb-2">Unable to load courses</h3>
+            <p className="text-muted-foreground mb-4">Something went wrong while fetching courses.</p>
+            <Button variant="outline" onClick={() => window.location.reload()}>Try Again</Button>
+          </div>
+        )}
+
         {/* Course Grid */}
-        {filteredCourses.length > 0 ? (
+        {!isLoading && !error && filteredCourses.length > 0 && (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredCourses.map(course => (
               <CourseCard key={course.id} course={course} />
             ))}
           </div>
-        ) : (
+        )}
+
+        {/* Empty State */}
+        {!isLoading && !error && filteredCourses.length === 0 && (
           <div className="text-center py-16">
             <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">No courses found</h3>

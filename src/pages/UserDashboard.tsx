@@ -1,5 +1,5 @@
-import { useAuth } from '@/context/AuthContext';
-import { useCourses } from '@/context/CourseContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCourses } from '@/contexts/CourseContext';
 import Navbar from '@/components/layout/Navbar';
 import CourseCard from '@/components/courses/CourseCard';
 import StatCard from '@/components/dashboard/StatCard';
@@ -9,7 +9,7 @@ import { BookOpen, Clock, Trophy, TrendingUp, ArrowRight } from 'lucide-react';
 
 const UserDashboard = () => {
   const { user } = useAuth();
-  const { courses, enrollments } = useCourses();
+  const { courses, enrollments, isLoading, error } = useCourses();
 
   const enrolledCourses = courses.filter(course =>
     enrollments.some(e => e.courseId === course.id)
@@ -28,7 +28,7 @@ const UserDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container py-8">
         {/* Welcome Section */}
         <div className="mb-8 animate-fade-in">
@@ -76,13 +76,28 @@ const UserDashboard = () => {
             </Button>
           </div>
 
-          {enrolledCourses.length > 0 ? (
+          {isLoading && (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          )}
+
+          {!isLoading && error && (
+            <div className="text-center py-12 bg-destructive/5 rounded-xl border border-destructive/20">
+              <p className="text-muted-foreground mb-2">Unable to load your enrollments.</p>
+              <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Retry</Button>
+            </div>
+          )}
+
+          {!isLoading && !error && enrolledCourses.length > 0 && (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {enrolledCourses.map(course => (
                 <CourseCard key={course.id} course={course} showProgress />
               ))}
             </div>
-          ) : (
+          )}
+
+          {!isLoading && !error && enrolledCourses.length === 0 && (
             <div className="text-center py-12 bg-muted/30 rounded-xl">
               <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No courses yet</h3>

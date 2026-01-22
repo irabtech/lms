@@ -1,11 +1,13 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { BookOpen, LayoutDashboard, LogOut, GraduationCap, Award, Users, BarChart3 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const Navbar = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, hasRole } = useAuth(); // isAuthenticated optional if we use !!user
+  // AuthContext doesn't export isAuthenticated anymore (it exports user, isLoading, etc.) 
+  // Let's rely on !!user
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -14,11 +16,11 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  if (!isAuthenticated) return null;
+  if (!user) return null;
 
   const getDashboardLink = () => {
-    if (user?.role === 'admin') return '/admin';
-    if (user?.role === 'instructor') return '/instructor/dashboard';
+    if (hasRole('ADMIN')) return '/admin';
+    if (hasRole('INSTRUCTOR')) return '/instructor/dashboard';
     return '/dashboard';
   };
 
@@ -39,42 +41,38 @@ const Navbar = () => {
         <nav className="hidden md:flex items-center gap-6">
           <Link
             to={getDashboardLink()}
-            className={`flex items-center gap-2 text-sm font-medium transition-colors ${
-              isActive(getDashboardLink()) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className={`flex items-center gap-2 text-sm font-medium transition-colors ${isActive(getDashboardLink()) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              }`}
           >
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
           </Link>
-          
-          {user?.role === 'instructor' && (
+
+          {hasRole('INSTRUCTOR') && (
             <Link
               to="/instructor/courses"
-              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
-                isActive('/instructor/courses') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-              }`}
+              className={`flex items-center gap-2 text-sm font-medium transition-colors ${isActive('/instructor/courses') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                }`}
             >
               <BookOpen className="h-4 w-4" />
               My Courses
             </Link>
           )}
 
-          {user?.role === 'admin' && (
+          {hasRole('ADMIN') && (
             <>
               <Link
                 to="/admin/analytics"
-                className={`flex items-center gap-2 text-sm font-medium transition-colors ${
-                  isActive('/admin/analytics') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-                }`}
+                className={`flex items-center gap-2 text-sm font-medium transition-colors ${isActive('/admin/analytics') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 <BarChart3 className="h-4 w-4" />
                 Analytics
               </Link>
               <Link
                 to="/admin/users"
-                className={`flex items-center gap-2 text-sm font-medium transition-colors ${
-                  isActive('/admin/users') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-                }`}
+                className={`flex items-center gap-2 text-sm font-medium transition-colors ${isActive('/admin/users') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 <Users className="h-4 w-4" />
                 Users
@@ -84,20 +82,18 @@ const Navbar = () => {
 
           <Link
             to="/courses"
-            className={`flex items-center gap-2 text-sm font-medium transition-colors ${
-              isActive('/courses') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className={`flex items-center gap-2 text-sm font-medium transition-colors ${isActive('/courses') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              }`}
           >
             <BookOpen className="h-4 w-4" />
             Courses
           </Link>
 
-          {user?.role === 'user' && (
+          {hasRole('STUDENT') && (
             <Link
               to="/certificates"
-              className={`flex items-center gap-2 text-sm font-medium transition-colors ${
-                isActive('/certificates') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-              }`}
+              className={`flex items-center gap-2 text-sm font-medium transition-colors ${isActive('/certificates') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                }`}
             >
               <Award className="h-4 w-4" />
               Certificates
@@ -115,7 +111,7 @@ const Navbar = () => {
             </Avatar>
             <div className="hidden sm:block">
               <p className="text-sm font-medium">{user?.name}</p>
-              <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+              <p className="text-xs text-muted-foreground capitalize">{user?.roles?.join(', ')}</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={handleLogout}>

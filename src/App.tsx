@@ -2,9 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { CourseProvider } from "@/context/CourseContext";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { CourseProvider } from "@/contexts/CourseContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import UserDashboard from "./pages/UserDashboard";
@@ -22,40 +23,22 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 
 const queryClient = new QueryClient();
 
-type UserRole = 'user' | 'admin' | 'instructor';
-
-const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: UserRole[] }) => {
-  const { isAuthenticated, user } = useAuth();
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    if (user.role === 'admin') return <Navigate to="/admin" replace />;
-    if (user.role === 'instructor') return <Navigate to="/instructor/dashboard" replace />;
-    return <Navigate to="/dashboard" replace />;
-  }
-  
-  return <>{children}</>;
-};
-
 const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['user']}><UserDashboard /></ProtectedRoute>} />
-      <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
-      <Route path="/admin/analytics" element={<ProtectedRoute allowedRoles={['admin']}><AdminAnalytics /></ProtectedRoute>} />
-      <Route path="/instructor/dashboard" element={<ProtectedRoute allowedRoles={['instructor']}><InstructorDashboard /></ProtectedRoute>} />
-      <Route path="/instructor/courses" element={<ProtectedRoute allowedRoles={['instructor']}><InstructorCourses /></ProtectedRoute>} />
-      <Route path="/instructor/course/:id" element={<ProtectedRoute allowedRoles={['instructor']}><InstructorCourseEdit /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute requiredRoles={['STUDENT']}><UserDashboard /></ProtectedRoute>} />
+      <Route path="/admin" element={<ProtectedRoute requiredRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/analytics" element={<ProtectedRoute requiredRoles={['ADMIN']}><AdminAnalytics /></ProtectedRoute>} />
+      <Route path="/instructor/dashboard" element={<ProtectedRoute requiredRoles={['INSTRUCTOR']}><InstructorDashboard /></ProtectedRoute>} />
+      <Route path="/instructor/courses" element={<ProtectedRoute requiredRoles={['INSTRUCTOR']}><InstructorCourses /></ProtectedRoute>} />
+      <Route path="/instructor/course/:id" element={<ProtectedRoute requiredRoles={['INSTRUCTOR']}><InstructorCourseEdit /></ProtectedRoute>} />
       <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
       <Route path="/course/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
-      <Route path="/course/:courseId/quiz/:lessonId" element={<ProtectedRoute allowedRoles={['user']}><QuizPage /></ProtectedRoute>} />
+      <Route path="/course/:courseId/quiz/:lessonId" element={<ProtectedRoute requiredRoles={['STUDENT']}><QuizPage /></ProtectedRoute>} />
       <Route path="/certificate/:id" element={<ProtectedRoute><CertificatePage /></ProtectedRoute>} />
-      <Route path="/certificates" element={<ProtectedRoute allowedRoles={['user']}><CertificatesList /></ProtectedRoute>} />
+      <Route path="/certificates" element={<ProtectedRoute requiredRoles={['STUDENT']}><CertificatesList /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

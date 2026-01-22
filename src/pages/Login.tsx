@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,30 +12,30 @@ import { toast } from 'sonner';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'user' | 'admin' | 'instructor'>('user');
-  const { login } = useAuth();
+  const [name, setName] = useState('');
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [role, setRole] = useState<'STUDENT' | 'INSTRUCTOR'>('STUDENT');
+  const { login, register, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password) {
+
+    if (!email || !password || (mode === 'register' && !name)) {
       toast.error('Please fill in all fields');
       return;
     }
 
-    const success = login(email, password, role);
-    if (success) {
-      toast.success(`Welcome back!`);
-      if (role === 'admin') {
-        navigate('/admin');
-      } else if (role === 'instructor') {
-        navigate('/instructor/dashboard');
+    try {
+      if (mode === 'login') {
+        await login(email, password);
+        navigate('/dashboard');
       } else {
+        await register(name, email, password, role);
         navigate('/dashboard');
       }
-    } else {
-      toast.error('Invalid credentials. Password must be at least 4 characters.');
+    } catch (err) {
+      // Errors handled in AuthContext
     }
   };
 
@@ -92,15 +92,39 @@ const Login = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs value={role} onValueChange={(v) => setRole(v as typeof role)} className="mb-6">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="user">Student</TabsTrigger>
-                  <TabsTrigger value="instructor">Instructor</TabsTrigger>
-                  <TabsTrigger value="admin">Admin</TabsTrigger>
+              <Tabs value={mode} onValueChange={(v) => setMode(v as 'login' | 'register')} className="mb-6">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="login">Login</TabsTrigger>
+                  <TabsTrigger value="register">Register</TabsTrigger>
                 </TabsList>
               </Tabs>
 
+              {mode === 'register' && (
+                <Tabs value={role} onValueChange={(v) => setRole(v as any)} className="mb-6">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="STUDENT">Student</TabsTrigger>
+                    <TabsTrigger value="INSTRUCTOR">Instructor</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-4">
+                {mode === 'register' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <div className="relative">
+                      <Input
+                        id="name"
+                        type="text"
+                        placeholder="John Doe"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="pl-3"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
@@ -131,14 +155,14 @@ const Login = () => {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" size="lg">
-                  Sign In
-                  <ArrowRight className="h-4 w-4" />
+                <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                  {isLoading ? (mode === 'login' ? 'Signing In...' : 'Registering...') : (mode === 'login' ? 'Sign In' : 'Sign Up')}
+                  {!isLoading && <ArrowRight className="h-4 w-4 ml-2" />}
                 </Button>
               </form>
 
               <p className="text-xs text-center text-muted-foreground mt-6">
-                Demo: Use any email and password (min 4 chars) to sign in
+                {mode === 'login' ? "Don't have an account? Switch to Register." : "Already have an account? Switch to Login."}
               </p>
             </CardContent>
           </Card>

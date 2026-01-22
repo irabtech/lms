@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useCourses } from '@/context/CourseContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCourses } from '@/contexts/CourseContext';
 import Navbar from '@/components/layout/Navbar';
 import StatCard from '@/components/dashboard/StatCard';
 import { Button } from '@/components/ui/button';

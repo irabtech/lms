@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Course } from '@/data/mockData';
-import { useCourses } from '@/context/CourseContext';
+import { useCourses, Course } from '@/contexts/CourseContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +16,11 @@ const CourseCard = ({ course, showProgress = false }: CourseCardProps) => {
   const enrolled = isEnrolled(course.id);
   const enrollment = getEnrollment(course.id);
 
-  const levelColors = {
+  const levelColors: Record<string, string> = {
+    BEGINNER: 'bg-success/10 text-success border-success/20',
+    INTERMEDIATE: 'bg-accent/10 text-accent border-accent/20',
+    ADVANCED: 'bg-primary/10 text-primary border-primary/20',
+    // Fallback for case variations if frontend mocks still use capitalized
     Beginner: 'bg-success/10 text-success border-success/20',
     Intermediate: 'bg-accent/10 text-accent border-accent/20',
     Advanced: 'bg-primary/10 text-primary border-primary/20',

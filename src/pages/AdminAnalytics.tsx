@@ -1,4 +1,4 @@
-import { useCourses } from '@/context/CourseContext';
+import { useCourses } from '@/contexts/CourseContext';
 import Navbar from '@/components/layout/Navbar';
 import StatCard from '@/components/dashboard/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,7 +49,7 @@ const AdminAnalytics = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-display font-bold mb-2">Platform Analytics</h1>
@@ -117,7 +117,7 @@ const AdminAnalytics = () => {
                     <img src={course.thumbnail} alt={course.title} className="h-10 w-16 rounded object-cover" />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{course.title}</p>
-                      <p className="text-xs text-muted-foreground">{course.instructor}</p>
+                      <p className="text-xs text-muted-foreground">{course.instructorId}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">{course.enrolledCount.toLocaleString()}</p>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useCourses } from '@/context/CourseContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCourses } from '@/contexts/CourseContext';
 import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 
 const InstructorCourses = () => {
   const { user } = useAuth();
-  const { courses, addCourse, togglePublishCourse } = useCourses();
+  const { courses, addCourse, togglePublishCourse, isLoading, error } = useCourses();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newCourse, setNewCourse] = useState({
     title: '',
@@ -35,31 +35,38 @@ const InstructorCourses = () => {
 
   const instructorCourses = courses.filter(c => c.instructorId === user?.id);
 
-  const handleCreateCourse = () => {
+  const handleCreateCourse = async () => {
     if (!newCourse.title || !newCourse.description) {
       toast.error('Please fill in required fields');
       return;
     }
-    const course = addCourse({ ...newCourse, instructor: user?.name || '', instructorId: user?.id || '' });
-    setNewCourse({
-      title: '', description: '', instructor: user?.name || '', instructorId: user?.id || '',
-      duration: '', level: 'Beginner', category: '',
-      thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop',
-      price: 0, isFree: true, isPublished: false,
-    });
-    setIsDialogOpen(false);
-    toast.success('Course created! Add modules and lessons to complete it.');
+
+    try {
+      await addCourse({ ...newCourse, instructor: user?.name || '', instructorId: user?.id || '' });
+      setNewCourse({
+        title: '', description: '', instructor: user?.name || '', instructorId: user?.id || '',
+        duration: '', level: 'Beginner', category: '',
+        thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=250&fit=crop',
+        price: 0, isFree: true, isPublished: false,
+      });
+      setIsDialogOpen(false);
+      // Success toast is handled in mutation onSuccess, but we can add one here if mutation one is removed or duplicate is fine.
+      // actually mutation onSuccess handles it. I'll remove this double toast or keep it for immediate feedback if mutation doesn't throw.
+    } catch (error) {
+      console.error("Failed to create course:", error);
+      // Mutation onError handles toast
+    }
   };
 
   const handleTogglePublish = (courseId: string, currentStatus: boolean) => {
-    togglePublishCourse(courseId);
+    togglePublishCourse(courseId, !currentStatus);
     toast.success(currentStatus ? 'Course unpublished' : 'Course published!');
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -120,7 +127,21 @@ const InstructorCourses = () => {
           </Dialog>
         </div>
 
-        {instructorCourses.length > 0 ? (
+        {isLoading && (
+          <div className="flex justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        )}
+
+        {!isLoading && error && (
+          <div className="text-center py-20 bg-destructive/5 rounded-xl border border-destructive/20">
+            <h3 className="text-lg font-semibold text-destructive mb-2">Unable to load courses</h3>
+            <p className="text-muted-foreground mb-4">Something went wrong while fetching courses.</p>
+            <Button variant="outline" onClick={() => window.location.reload()}>Try Again</Button>
+          </div>
+        )}
+
+        {!isLoading && !error && instructorCourses.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {instructorCourses.map((course) => (
               <Card key={course.id} className="overflow-hidden shadow-card hover:shadow-card-hover transition-all">
@@ -133,7 +154,7 @@ const InstructorCourses = () => {
                 <CardContent className="p-5">
                   <h3 className="font-display font-semibold mb-2 line-clamp-2">{course.title}</h3>
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{course.description}</p>
-                  
+
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                     <span className="flex items-center gap-1"><Users className="h-4 w-4" />{course.enrolledCount}</span>
                     <span className="flex items-center gap-1"><BookOpen className="h-4 w-4" />{course.modules?.length || 0} modules</span>
@@ -153,7 +174,7 @@ const InstructorCourses = () => {
               </Card>
             ))}
           </div>
-        ) : (
+        ) : !isLoading && !error && (
           <Card className="p-12 text-center">
             <BookOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-xl font-display font-semibold mb-2">No courses yet</h3>

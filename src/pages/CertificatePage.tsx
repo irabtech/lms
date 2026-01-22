@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { useCourses } from '@/context/CourseContext';
+import { useCourses } from '@/contexts/CourseContext';
 import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -31,7 +31,7 @@ const CertificatePage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <div className="container py-8 max-w-4xl">
         <Link to="/certificates" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
           <ArrowLeft className="h-4 w-4" /> Back to Certificates
@@ -63,7 +63,7 @@ const CertificatePage = () => {
                 <h2 className="text-4xl font-display font-bold text-primary mb-4">{certificate.studentName}</h2>
                 <p className="text-lg text-muted-foreground mb-4">has successfully completed the course</p>
                 <h3 className="text-2xl font-display font-semibold mb-6">"{certificate.courseName}"</h3>
-                
+
                 <div className="flex items-center justify-center gap-2 text-success mb-8">
                   <CheckCircle2 className="h-5 w-5" />
                   <span className="font-medium">Course Completed with Distinction</span>

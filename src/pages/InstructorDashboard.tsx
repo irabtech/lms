@@ -1,5 +1,5 @@
-import { useAuth } from '@/context/AuthContext';
-import { useCourses } from '@/context/CourseContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCourses } from '@/contexts/CourseContext';
 import Navbar from '@/components/layout/Navbar';
 import StatCard from '@/components/dashboard/StatCard';
 import { Button } from '@/components/ui/button';
@@ -17,20 +17,20 @@ const InstructorDashboard = () => {
   const instructorCourses = courses.filter(c => c.instructorId === user?.id);
   const publishedCourses = instructorCourses.filter(c => c.isPublished);
   const totalStudents = instructorCourses.reduce((sum, c) => sum + c.enrolledCount, 0);
-  
+
   const avgCompletion = instructorCourses.length > 0
     ? Math.round(
-        enrollments
-          .filter(e => instructorCourses.some(c => c.id === e.courseId))
-          .reduce((sum, e) => sum + e.progress, 0) / 
-        Math.max(enrollments.filter(e => instructorCourses.some(c => c.id === e.courseId)).length, 1)
-      )
+      enrollments
+        .filter(e => instructorCourses.some(c => c.id === e.courseId))
+        .reduce((sum, e) => sum + e.progress, 0) /
+      Math.max(enrollments.filter(e => instructorCourses.some(c => c.id === e.courseId)).length, 1)
+    )
     : 0;
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <main className="container py-8">
         {/* Profile Card */}
         <Card className="mb-8 shadow-card animate-fade-in">
