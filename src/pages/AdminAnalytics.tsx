@@ -6,14 +6,35 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Users, BookOpen, GraduationCap, Award, TrendingUp, BarChart3 } from 'lucide-react';
-import { mockUsers } from '@/data/mockData';
 
 const AdminAnalytics = () => {
-  const { courses, enrollments, certificates } = useCourses();
+  const { courses, allEnrollments: enrollments, certificates, profiles, isLoading } = useCourses();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container py-16 text-center">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 w-64 bg-muted rounded mx-auto"></div>
+            <div className="h-4 w-96 bg-muted rounded mx-auto"></div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 mt-8">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-24 bg-muted rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Calculate stats
-  const totalStudents = mockUsers.filter(u => u.role === 'user').length;
-  const totalInstructors = mockUsers.filter(u => u.role === 'instructor').length;
+  const students = profiles.filter(p => p.role?.toUpperCase() === 'STUDENT');
+  const instructors = profiles.filter(p => p.role?.toUpperCase() === 'INSTRUCTOR');
+
+  const totalStudents = students.length;
+  const totalInstructors = instructors.length;
   const publishedCourses = courses.filter(c => c.isPublished).length;
   const draftCourses = courses.filter(c => !c.isPublished).length;
   const totalEnrollments = enrollments.length;
@@ -25,17 +46,16 @@ const AdminAnalytics = () => {
 
   // Popular courses (by enrollment count)
   const popularCourses = [...courses]
-    .sort((a, b) => b.enrolledCount - a.enrolledCount)
+    .sort((a, b) => (b.enrolledCount || 0) - (a.enrolledCount || 0))
     .slice(0, 5);
 
   // Instructor performance
-  const instructorStats = mockUsers
-    .filter(u => u.role === 'instructor')
+  const instructorStats = instructors
     .map(instructor => {
       const instructorCourses = courses.filter(c => c.instructorId === instructor.id);
-      const totalStudents = instructorCourses.reduce((sum, c) => sum + c.enrolledCount, 0);
+      const totalStudents = instructorCourses.reduce((sum, c) => sum + (c.enrolledCount || 0), 0);
       const avgRating = instructorCourses.length > 0
-        ? (instructorCourses.reduce((sum, c) => sum + c.rating, 0) / instructorCourses.length).toFixed(1)
+        ? (instructorCourses.reduce((sum, c) => sum + (c.rating || 0), 0) / instructorCourses.length).toFixed(1)
         : '0';
       return {
         ...instructor,

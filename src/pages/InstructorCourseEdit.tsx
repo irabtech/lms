@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 
 const InstructorCourseEdit = () => {
   const { id } = useParams<{ id: string }>();
-  const { getCourse, updateCourse, addModule, removeModule, addLesson, removeLesson } = useCourses();
+  const { getCourse, updateCourse, addModule, removeModule, addLesson, updateLesson, removeLesson } = useCourses();
 
   const course = getCourse(id || '');
   // Using course.enrolledCount instead of fetching list
@@ -25,8 +25,9 @@ const InstructorCourseEdit = () => {
   const [isModuleDialogOpen, setIsModuleDialogOpen] = useState(false);
   const [isLessonDialogOpen, setIsLessonDialogOpen] = useState(false);
   const [selectedModuleId, setSelectedModuleId] = useState<string>('');
+  const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [newModule, setNewModule] = useState({ title: '', description: '' });
-  const [newLesson, setNewLesson] = useState({ title: '', duration: '', contentType: 'video' as const });
+  const [newLesson, setNewLesson] = useState({ title: '', duration: '', contentType: 'video' as 'video' | 'text' | 'quiz', content: '', videoUrl: '' });
 
   if (!course) {
     return (
@@ -54,20 +55,38 @@ const InstructorCourseEdit = () => {
   const handleAddLesson = async () => {
     if (!newLesson.title || !selectedModuleId) { toast.error('Lesson title is required'); return; }
     try {
-      await addLesson(course.id, selectedModuleId, newLesson);
-      setNewLesson({ title: '', duration: '', contentType: 'video' });
+      if (editingLessonId) {
+        await updateLesson(course.id, selectedModuleId, editingLessonId, newLesson);
+      } else {
+        await addLesson(course.id, selectedModuleId, newLesson);
+      }
+      setNewLesson({ title: '', duration: '', contentType: 'video', content: '', videoUrl: '' });
       setIsLessonDialogOpen(false);
+      setEditingLessonId(null);
     } catch (e) {
       console.error(e);
     }
   };
 
-  const openLessonDialog = (moduleId: string) => {
+  const openLessonDialog = (moduleId: string, lesson?: any) => {
     setSelectedModuleId(moduleId);
+    if (lesson) {
+      setEditingLessonId(lesson.id);
+      setNewLesson({
+        title: lesson.title,
+        duration: lesson.duration,
+        contentType: lesson.type,
+        content: lesson.content || '',
+        videoUrl: lesson.videoUrl || ''
+      });
+    } else {
+      setEditingLessonId(null);
+      setNewLesson({ title: '', duration: '', contentType: 'video', content: '', videoUrl: '' });
+    }
     setIsLessonDialogOpen(true);
   };
 
-  const contentTypeIcons = { video: Play, article: FileText, quiz: HelpCircle };
+  const contentTypeIcons = { video: Play, text: FileText, quiz: HelpCircle };
 
   return (
     <div className="min-h-screen bg-background">
@@ -158,14 +177,21 @@ const InstructorCourseEdit = () => {
                               const Icon = contentTypeIcons[lesson.type];
                               return (
                                 <div key={lesson.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                                  <div className="flex items-center gap-3">
+                                  <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => openLessonDialog(module.id, lesson)}>
                                     <Icon className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-sm">{lesson.title}</span>
-                                    <span className="text-xs text-muted-foreground">{lesson.duration}</span>
+                                    <div className="flex flex-col">
+                                      <span className="text-sm font-medium">{lesson.title}</span>
+                                      <span className="text-xs text-muted-foreground">{lesson.duration} {lesson.videoUrl ? '• Video' : ''}</span>
+                                    </div>
                                   </div>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { removeLesson(course.id, module.id, lesson.id); toast.success('Lesson removed'); }}>
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
+                                  <div className="flex items-center gap-1">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openLessonDialog(module.id, lesson)}>
+                                      <Plus className="h-3 w-3" /> {/* Use Plus as edit for now or just the click area */}
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { removeLesson(course.id, module.id, lesson.id); toast.success('Lesson removed'); }}>
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
                                 </div>
                               );
                             })}
@@ -221,8 +247,8 @@ const InstructorCourseEdit = () => {
 
         {/* Add Lesson Dialog */}
         <Dialog open={isLessonDialogOpen} onOpenChange={setIsLessonDialogOpen}>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Add Lesson</DialogTitle></DialogHeader>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader><DialogTitle>{editingLessonId ? 'Edit Lesson' : 'Add Lesson'}</DialogTitle></DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label>Lesson Title</Label>
@@ -239,16 +265,33 @@ const InstructorCourseEdit = () => {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="video">Video</SelectItem>
-                      <SelectItem value="article">Article</SelectItem>
+                      <SelectItem value="text">Text Article</SelectItem>
                       <SelectItem value="quiz">Quiz</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+
+              {newLesson.contentType === 'video' && (
+                <div className="space-y-2">
+                  <Label>Video URL</Label>
+                  <Input value={newLesson.videoUrl} onChange={(e) => setNewLesson({ ...newLesson, videoUrl: e.target.value })} placeholder="YouTube or Vimeo URL" />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Content (Markdown supported)</Label>
+                <Textarea
+                  value={newLesson.content}
+                  onChange={(e) => setNewLesson({ ...newLesson, content: e.target.value })}
+                  placeholder="The text content for this lesson..."
+                  rows={6}
+                />
+              </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsLessonDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleAddLesson}>Add Lesson</Button>
+              <Button variant="outline" onClick={() => { setIsLessonDialogOpen(false); setEditingLessonId(null); }}>Cancel</Button>
+              <Button onClick={handleAddLesson}>{editingLessonId ? 'Update Lesson' : 'Add Lesson'}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

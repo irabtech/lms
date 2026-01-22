@@ -31,9 +31,13 @@ const CourseDetail = () => {
     );
   }
 
-  const handleEnroll = () => {
-    enrollInCourse(course.id);
-    toast.success(`Successfully enrolled in "${course.title}"!`);
+  const handleEnroll = async () => {
+    try {
+      await enrollInCourse(course.id);
+      // Success toast is already handled in CourseContext/Mutation
+    } catch (error) {
+      console.error("Enrollment failed:", error);
+    }
   };
 
   const handleUnenroll = () => {
@@ -64,7 +68,7 @@ const CourseDetail = () => {
               <p className="text-lg opacity-90 mb-6">{course.description}</p>
 
               <div className="flex flex-wrap gap-4 text-sm">
-                <span className="flex items-center gap-2"><User className="h-4 w-4" />{course.instructor}</span>
+                <span className="flex items-center gap-2"><User className="h-4 w-4" />{course.instructorId}</span>
                 <span className="flex items-center gap-2"><Clock className="h-4 w-4" />{course.duration}</span>
                 <span className="flex items-center gap-2"><Users className="h-4 w-4" />{course.enrolledCount.toLocaleString()} enrolled</span>
                 <span className="flex items-center gap-2"><Star className="h-4 w-4 fill-accent text-accent" />{course.rating} rating</span>
@@ -96,7 +100,11 @@ const CourseDetail = () => {
                 <div className="mt-6 space-y-3">
                   {enrolled ? (
                     <>
-                      <Button className="w-full" size="lg"><Play className="h-4 w-4" />Continue Learning</Button>
+                      <Button asChild className="w-full" size="lg">
+                        <Link to={`/course/${course.id}/lesson/${enrollment?.completedLessons?.[0] || course.modules?.[0]?.lessons?.[0]?.id}`}>
+                          <Play className="h-4 w-4" />Continue Learning
+                        </Link>
+                      </Button>
                       {hasRole('STUDENT') && (
                         <Button variant="outline" className="w-full" onClick={handleUnenroll}>Unenroll</Button>
                       )}
@@ -153,8 +161,10 @@ const CourseDetail = () => {
                           return (
                             <div key={lesson.id} className="flex items-center justify-between text-sm py-1">
                               <div className="flex items-center gap-2">
-                                {lesson.contentType === 'quiz' ? <FileText className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-                                <span className="text-muted-foreground">{lesson.title}</span>
+                                {lesson.type === 'quiz' ? <FileText className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                                <Link to={`/course/${course.id}/lesson/${lesson.id}`} className="text-muted-foreground hover:text-primary transition-colors">
+                                  {lesson.title}
+                                </Link>
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="text-xs text-muted-foreground">{lesson.duration}</span>

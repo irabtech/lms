@@ -60,9 +60,29 @@ export interface QuizAttempt {
     date: string;
 }
 
+export interface Profile {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+    bio?: string;
+    role?: 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
+}
+
+export interface Certificate {
+    id: string;
+    courseId: string;
+    userId: string;
+    instructorName: string;
+    completedAt: string;
+}
+
 interface CourseContextType {
     courses: Course[];
-    enrollments: Enrollment[];
+    enrollments: Enrollment[]; // student's own enrollments
+    allEnrollments: Enrollment[]; // all enrollments (for admin)
+    profiles: Profile[];
+    certificates: Certificate[];
     isLoading: boolean;
     error: any;
 
@@ -83,12 +103,14 @@ interface CourseContextType {
     addModule: (courseId: string, data: any) => Promise<void>;
     removeModule: (courseId: string, moduleId: string) => Promise<void>;
     addLesson: (courseId: string, moduleId: string, data: any) => Promise<void>;
+    updateLesson: (courseId: string, moduleId: string, lessonId: string, data: any) => Promise<void>;
     removeLesson: (courseId: string, moduleId: string, lessonId: string) => Promise<void>;
 
     // Writes (Student Actions)
     enrollInCourse: (courseId: string) => Promise<void>;
     unenrollFromCourse: (courseId: string) => Promise<void>; // Stub
     updateLessonProgress: (enrollmentId: string, progress: number, completedLessons: string[]) => Promise<void>;
+    completeLesson: (courseId: string, lessonId: string) => Promise<void>;
 
     // Quiz & Certificates (Stubs/Mock)
     getQuiz: (lessonId: string) => any;
@@ -128,10 +150,10 @@ const mapCourseFromApi = (data: any): Course => ({
             id: l.id,
             title: l.title,
             content: l.content,
-            type: l.type,
-            duration: l.duration,
-            videoUrl: l.video_url,
-            isFree: l.is_free
+            type: (l.content_type || 'VIDEO').toLowerCase() as 'video' | 'text' | 'quiz',
+            duration: l.duration || '',
+            videoUrl: l.video_url || '',
+            isFree: l.is_free || false
         }))
     })),
     isFree: data.price === 0
@@ -169,7 +191,6 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
             return data.map(mapCourseFromApi);
         }
     });
-
     const { data: enrollments = [], isLoading: isLoadingEnrollments, error: enrollmentsError } = useQuery({
         queryKey: ['enrollments', user?.id],
         enabled: !!user,
@@ -179,10 +200,66 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
                 return data.map(mapEnrollmentFromApi);
             } catch (error) {
                 console.warn("Failed to fetch enrollments", error);
-                throw error; // Let react-query handle it
+                return [];
             }
         },
         retry: 1
+    });
+
+    const { data: allEnrollments = [], isLoading: isLoadingAllEnrollments } = useQuery({
+        queryKey: ['all-enrollments', user?.id],
+        enabled: !!user && (user.roles.includes('ADMIN') || user.roles.includes('INSTRUCTOR')),
+        queryFn: async () => {
+            try {
+                const data = await api.admin.getAllEnrollments();
+                return data.map(mapEnrollmentFromApi);
+            } catch (error) {
+                console.warn("Failed to fetch all enrollments", error);
+                return [];
+            }
+        },
+        retry: 1
+    });
+
+    const { data: profiles = [], isLoading: isLoadingProfiles } = useQuery({
+        queryKey: ['profiles', user?.id],
+        enabled: !!user && user.roles.includes('ADMIN'),
+        queryFn: async () => {
+            try {
+                const profilesData = await api.users.listProfiles();
+                const rolesData = await api.users.listUserRoles();
+                const roleMap = new Map(rolesData.map((r: any) => [r.user_id, r.role]));
+
+                console.log(`[CourseContext] Fetched ${profilesData.length} profiles and ${rolesData.length} roles`);
+                return profilesData.map((p: any) => ({
+                    ...p,
+                    role: (roleMap.get(p.id) || 'STUDENT').toUpperCase()
+                }));
+            } catch (error) {
+                console.warn("Failed to fetch profiles", error);
+                return [];
+            }
+        }
+    });
+
+    const { data: allCertificates = [], isLoading: isLoadingCertificates } = useQuery({
+        queryKey: ['certificates', user?.id],
+        enabled: !!user,
+        queryFn: async () => {
+            try {
+                const data = await api.certificates.list();
+                return data.map((c: any) => ({
+                    id: c.id,
+                    courseId: c.course_id,
+                    userId: c.user_id,
+                    instructorName: c.instructor_name,
+                    completedAt: c.completed_at
+                }));
+            } catch (error) {
+                console.warn("Failed to fetch certificates", error);
+                return [];
+            }
+        }
     });
 
     // --- Mutations ---
@@ -216,6 +293,10 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['enrollments'] });
             toast.success("Enrolled successfully!");
+        },
+        onError: (error: any) => {
+            console.error("Enrollment mutation error:", error);
+            toast.error(error.message || "Failed to enroll in course");
         }
     });
 
@@ -257,6 +338,15 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['courses'] });
             toast.success("Lesson added");
+        }
+    });
+
+    const updateLessonMutation = useMutation({
+        mutationFn: ({ courseId, moduleId, lessonId, data }: { courseId: string, moduleId: string, lessonId: string, data: any }) =>
+            api.courses.updateLesson(courseId, moduleId, lessonId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['courses'] });
+            toast.success("Lesson updated");
         }
     });
 
@@ -333,8 +423,39 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     };
     const addLesson = async (courseId: string, moduleId: string, data: any) => {
         const apiData = { ...data };
-        if (apiData.contentType) { apiData.type = apiData.contentType; delete apiData.contentType; }
+        if (apiData.contentType) { apiData.content_type = apiData.contentType.toUpperCase(); delete apiData.contentType; }
+        // Handle 'article' or 'text' -> 'TEXT'
+        if (apiData.content_type === 'ARTICLE' || apiData.content_type === 'TEXT') apiData.content_type = 'TEXT';
+        if (apiData.videoUrl) { apiData.video_url = apiData.videoUrl; delete apiData.videoUrl; }
         await addLessonMutation.mutateAsync({ courseId, moduleId, data: apiData });
+    };
+
+    const updateLesson = async (courseId: string, moduleId: string, lessonId: string, data: any) => {
+        const apiData = { ...data };
+        if (apiData.contentType) { apiData.content_type = apiData.contentType.toUpperCase(); delete apiData.contentType; }
+        // Handle 'article' or 'text' -> 'TEXT'
+        if (apiData.content_type === 'ARTICLE' || apiData.content_type === 'TEXT') apiData.content_type = 'TEXT';
+        if (apiData.videoUrl) { apiData.video_url = apiData.videoUrl; delete apiData.videoUrl; }
+        await updateLessonMutation.mutateAsync({ courseId, moduleId, lessonId, data: apiData });
+    };
+
+    const completeLesson = async (courseId: string, lessonId: string) => {
+        const enrollment = getEnrollment(courseId);
+        if (!enrollment) return;
+
+        if (enrollment.completedLessons.includes(lessonId)) return;
+
+        const newCompletedLessons = [...enrollment.completedLessons, lessonId];
+
+        // Calculate progress
+        const course = getCourse(courseId);
+        if (!course) return;
+
+        const totalLessons = course.modules?.reduce((acc, mod) => acc + (mod.lessons?.length || 0), 0) || 1;
+        const progress = Math.round((newCompletedLessons.length / totalLessons) * 100);
+
+        await updateLessonProgress(enrollment.id, progress, newCompletedLessons);
+        toast.success("Lesson completed!");
     };
     const removeLesson = async (courseId: string, moduleId: string, lessonId: string) => {
         await removeLessonMutation.mutateAsync({ courseId, moduleId, lessonId });
@@ -365,7 +486,10 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
         <CourseContext.Provider value={{
             courses,
             enrollments,
-            isLoading: isLoadingCourses || isLoadingEnrollments,
+            allEnrollments,
+            profiles,
+            certificates: allCertificates,
+            isLoading: isLoadingCourses || isLoadingEnrollments || isLoadingAllEnrollments || isLoadingProfiles || isLoadingCertificates,
             error: coursesError || enrollmentsError,
             getCourse,
             isEnrolled,
@@ -379,10 +503,12 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
             addModule,
             removeModule,
             addLesson,
+            updateLesson,
             removeLesson,
             enrollInCourse,
             unenrollFromCourse,
             updateLessonProgress,
+            completeLesson,
             getQuiz,
             submitQuizAttempt,
             getBestAttempt,

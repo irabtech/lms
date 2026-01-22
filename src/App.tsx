@@ -20,6 +20,7 @@ import QuizPage from "./pages/QuizPage";
 import CertificatePage from "./pages/CertificatePage";
 import CertificatesList from "./pages/CertificatesList";
 import AdminAnalytics from "./pages/AdminAnalytics";
+import LessonView from "./pages/LessonView";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const AppRoutes = () => {
       <Route path="/instructor/course/:id" element={<ProtectedRoute requiredRoles={['INSTRUCTOR']}><InstructorCourseEdit /></ProtectedRoute>} />
       <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
       <Route path="/course/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
+      <Route path="/course/:courseId/lesson/:lessonId" element={<ProtectedRoute><LessonView /></ProtectedRoute>} />
       <Route path="/course/:courseId/quiz/:lessonId" element={<ProtectedRoute requiredRoles={['STUDENT']}><QuizPage /></ProtectedRoute>} />
       <Route path="/certificate/:id" element={<ProtectedRoute><CertificatePage /></ProtectedRoute>} />
       <Route path="/certificates" element={<ProtectedRoute requiredRoles={['STUDENT']}><CertificatesList /></ProtectedRoute>} />
