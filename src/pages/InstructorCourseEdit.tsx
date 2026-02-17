@@ -16,10 +16,10 @@ import { toast } from 'sonner';
 
 const InstructorCourseEdit = () => {
   const { id } = useParams<{ id: string }>();
-  const { getCourse, updateCourse, addModule, removeModule, addLesson, updateLesson, removeLesson } = useCourses();
+  const { getCourse, allEnrollments, updateCourse, addModule, removeModule, addLesson, updateLesson, removeLesson } = useCourses();
 
   const course = getCourse(id || '');
-  // Using course.enrolledCount instead of fetching list
+  const enrolledCount = allEnrollments.filter(e => e.courseId === id).length;
 
 
   const [isModuleDialogOpen, setIsModuleDialogOpen] = useState(false);
@@ -224,7 +224,7 @@ const InstructorCourseEdit = () => {
                 <div className="flex items-center gap-4">
                   <div className="gradient-primary rounded-xl p-3 text-primary-foreground"><Users className="h-5 w-5" /></div>
                   <div>
-                    <p className="text-2xl font-bold">{course.enrolledCount}</p>
+                    <p className="text-2xl font-bold">{enrolledCount}</p>
                     <p className="text-sm text-muted-foreground">students enrolled</p>
                   </div>
                 </div>

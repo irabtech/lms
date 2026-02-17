@@ -78,9 +78,9 @@ const QuizPage = () => {
       toast.success('Congratulations! You passed the quiz!');
 
       // Check if course is now completed
-      const status = getCourseCompletionStatus(courseId || '', user?.id || 'user1');
+      const status = getCourseCompletionStatus(courseId || '');
       if (status.isCompleted) {
-        generateCertificate(courseId || '', user?.id || 'user1', user?.name || 'Student');
+        generateCertificate(courseId || '');
         toast.success('🎉 Course completed! Certificate generated!');
       }
     } else {

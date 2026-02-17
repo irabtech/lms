@@ -49,7 +49,7 @@ const Login = () => {
             <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
               <GraduationCap className="h-8 w-8" />
             </div>
-            <span className="text-3xl font-display font-bold">LearnHub</span>
+            <span className="text-3xl font-display font-bold">IRAB Tech Learning Hub</span>
           </div>
           <h1 className="text-4xl lg:text-5xl font-display font-bold mb-6 leading-tight">
             Unlock Your Potential with Expert-Led Courses
@@ -81,7 +81,7 @@ const Login = () => {
             <div className="gradient-primary rounded-lg p-2">
               <GraduationCap className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-2xl font-display font-bold">LearnHub</span>
+            <span className="text-2xl font-display font-bold">IRAB Tech Learning Hub</span>
           </div>
 
           <Card className="shadow-card border-0">

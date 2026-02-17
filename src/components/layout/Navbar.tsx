@@ -34,7 +34,7 @@ const Navbar = () => {
             <GraduationCap className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="text-xl font-display font-bold text-foreground">
-            LearnHub
+            IRAB Tech Learning Hub
           </span>
         </Link>
 

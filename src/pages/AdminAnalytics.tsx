@@ -29,7 +29,7 @@ const AdminAnalytics = () => {
     );
   }
 
-  // Calculate stats
+  // Calculate stats 
   const students = profiles.filter(p => p.role?.toUpperCase() === 'STUDENT');
   const instructors = profiles.filter(p => p.role?.toUpperCase() === 'INSTRUCTOR');
 
@@ -46,14 +46,18 @@ const AdminAnalytics = () => {
 
   // Popular courses (by enrollment count)
   const popularCourses = [...courses]
-    .sort((a, b) => (b.enrolledCount || 0) - (a.enrolledCount || 0))
+    .map(c => ({
+      ...c,
+      actualEnrolledCount: enrollments.filter(e => e.courseId === c.id).length
+    }))
+    .sort((a, b) => b.actualEnrolledCount - a.actualEnrolledCount)
     .slice(0, 5);
 
   // Instructor performance
   const instructorStats = instructors
     .map(instructor => {
       const instructorCourses = courses.filter(c => c.instructorId === instructor.id);
-      const totalStudents = instructorCourses.reduce((sum, c) => sum + (c.enrolledCount || 0), 0);
+      const totalStudents = enrollments.filter(e => instructorCourses.some(c => c.id === e.courseId)).length;
       const avgRating = instructorCourses.length > 0
         ? (instructorCourses.reduce((sum, c) => sum + (c.rating || 0), 0) / instructorCourses.length).toFixed(1)
         : '0';
@@ -140,7 +144,7 @@ const AdminAnalytics = () => {
                       <p className="text-xs text-muted-foreground">{course.instructorId}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">{course.enrolledCount.toLocaleString()}</p>
+                      <p className="font-semibold">{course.actualEnrolledCount.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">students</p>
                     </div>
                   </div>

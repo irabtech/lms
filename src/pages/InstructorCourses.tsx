@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 
 const InstructorCourses = () => {
   const { user } = useAuth();
-  const { courses, addCourse, togglePublishCourse, isLoading, error } = useCourses();
+  const { courses, allEnrollments, addCourse, togglePublishCourse, isLoading, error } = useCourses();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newCourse, setNewCourse] = useState({
     title: '',
@@ -143,36 +143,39 @@ const InstructorCourses = () => {
 
         {!isLoading && !error && instructorCourses.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {instructorCourses.map((course) => (
-              <Card key={course.id} className="overflow-hidden shadow-card hover:shadow-card-hover transition-all">
-                <div className="relative">
-                  <img src={course.thumbnail} alt={course.title} className="h-40 w-full object-cover" />
-                  <Badge className={`absolute top-3 right-3 ${course.isPublished ? 'bg-success' : 'bg-muted'}`}>
-                    {course.isPublished ? <><Globe className="h-3 w-3 mr-1" />Published</> : <><EyeOff className="h-3 w-3 mr-1" />Draft</>}
-                  </Badge>
-                </div>
-                <CardContent className="p-5">
-                  <h3 className="font-display font-semibold mb-2 line-clamp-2">{course.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{course.description}</p>
-
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                    <span className="flex items-center gap-1"><Users className="h-4 w-4" />{course.enrolledCount}</span>
-                    <span className="flex items-center gap-1"><BookOpen className="h-4 w-4" />{course.modules?.length || 0} modules</span>
+            {instructorCourses.map((course) => {
+              const enrolledCount = allEnrollments.filter(e => e.courseId === course.id).length;
+              return (
+                <Card key={course.id} className="overflow-hidden shadow-card hover:shadow-card-hover transition-all">
+                  <div className="relative">
+                    <img src={course.thumbnail} alt={course.title} className="h-40 w-full object-cover" />
+                    <Badge className={`absolute top-3 right-3 ${course.isPublished ? 'bg-success' : 'bg-muted'}`}>
+                      {course.isPublished ? <><Globe className="h-3 w-3 mr-1" />Published</> : <><EyeOff className="h-3 w-3 mr-1" />Draft</>}
+                    </Badge>
                   </div>
+                  <CardContent className="p-5">
+                    <h3 className="font-display font-semibold mb-2 line-clamp-2">{course.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{course.description}</p>
 
-                  <div className="flex items-center justify-between pt-4 border-t">
-                    <div className="flex items-center gap-2">
-                      <Switch checked={course.isPublished} onCheckedChange={() => handleTogglePublish(course.id, course.isPublished)} />
-                      <span className="text-sm">{course.isPublished ? 'Published' : 'Draft'}</span>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+                      <span className="flex items-center gap-1"><Users className="h-4 w-4" />{enrolledCount}</span>
+                      <span className="flex items-center gap-1"><BookOpen className="h-4 w-4" />{course.modules?.length || 0} modules</span>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="icon" asChild><Link to={`/course/${course.id}`}><Eye className="h-4 w-4" /></Link></Button>
-                      <Button variant="ghost" size="icon" asChild><Link to={`/instructor/course/${course.id}`}><Edit className="h-4 w-4" /></Link></Button>
+
+                    <div className="flex items-center justify-between pt-4 border-t">
+                      <div className="flex items-center gap-2">
+                        <Switch checked={course.isPublished} onCheckedChange={() => handleTogglePublish(course.id, course.isPublished)} />
+                        <span className="text-sm">{course.isPublished ? 'Published' : 'Draft'}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="icon" asChild><Link to={`/course/${course.id}`}><Eye className="h-4 w-4" /></Link></Button>
+                        <Button variant="ghost" size="icon" asChild><Link to={`/instructor/course/${course.id}`}><Edit className="h-4 w-4" /></Link></Button>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         ) : !isLoading && !error && (
           <Card className="p-12 text-center">

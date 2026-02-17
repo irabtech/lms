@@ -11,13 +11,15 @@ import { toast } from 'sonner';
 
 const CourseDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { getCourse, isEnrolled, getEnrollment, enrollInCourse, unenrollFromCourse, getCourseCompletionStatus, getQuiz } = useCourses();
+  const { getCourse, isEnrolled, getEnrollment, enrollInCourse, unenrollFromCourse, getCourseCompletionStatus, getQuiz, getUserCertificates } = useCourses();
   const { user, hasRole } = useAuth();
 
   const course = getCourse(id || '');
   const enrolled = isEnrolled(id || '');
   const enrollment = getEnrollment(id || '');
-  const completionStatus = enrolled ? getCourseCompletionStatus(id || '', user?.id || 'user1') : null;
+  const completionStatus = enrolled ? getCourseCompletionStatus(id || '') : null;
+  const certificates = getUserCertificates(user?.id);
+  const certificate = certificates.find(c => c.courseId === id);
 
   if (!course) {
     return (
@@ -34,7 +36,6 @@ const CourseDetail = () => {
   const handleEnroll = async () => {
     try {
       await enrollInCourse(course.id);
-      // Success toast is already handled in CourseContext/Mutation
     } catch (error) {
       console.error("Enrollment failed:", error);
     }
@@ -68,7 +69,7 @@ const CourseDetail = () => {
               <p className="text-lg opacity-90 mb-6">{course.description}</p>
 
               <div className="flex flex-wrap gap-4 text-sm">
-                <span className="flex items-center gap-2"><User className="h-4 w-4" />{course.instructorId}</span>
+                <span className="flex items-center gap-2"><User className="h-4 w-4" />{course.instructorName}</span>
                 <span className="flex items-center gap-2"><Clock className="h-4 w-4" />{course.duration}</span>
                 <span className="flex items-center gap-2"><Users className="h-4 w-4" />{course.enrolledCount.toLocaleString()} enrolled</span>
                 <span className="flex items-center gap-2"><Star className="h-4 w-4 fill-accent text-accent" />{course.rating} rating</span>
@@ -87,9 +88,9 @@ const CourseDetail = () => {
                       <span className="font-medium">{enrollment.progress}%</span>
                     </div>
                     <Progress value={enrollment.progress} className="h-2" />
-                    {completionStatus?.isCompleted && enrollment.certificateId && (
+                    {completionStatus?.isCompleted && certificate && (
                       <Button asChild className="w-full mt-4" variant="outline">
-                        <Link to={`/certificate/${enrollment.certificateId}`}>
+                        <Link to={`/certificate/${certificate.id}`}>
                           <Award className="h-4 w-4 mr-2" /> View Certificate
                         </Link>
                       </Button>

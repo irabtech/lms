@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
-  const { courses, addCourse, removeCourse } = useCourses();
+  const { courses, allEnrollments, addCourse, removeCourse } = useCourses();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newCourse, setNewCourse] = useState({
     title: '',
@@ -33,7 +33,7 @@ const AdminDashboard = () => {
     isPublished: true,
   });
 
-  const totalEnrollments = courses.reduce((sum, c) => sum + c.enrolledCount, 0);
+  const totalEnrollments = allEnrollments.length;
   const avgRating = courses.length ? (courses.reduce((sum, c) => sum + c.rating, 0) / courses.length).toFixed(1) : 0;
 
   const handleAddCourse = () => {
@@ -138,28 +138,31 @@ const AdminDashboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {courses.map((course) => (
-                    <TableRow key={course.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <img src={course.thumbnail} alt={course.title} className="h-10 w-16 rounded-md object-cover" />
-                          <div>
-                            <p className="font-medium line-clamp-1">{course.title}</p>
-                            <p className="text-xs text-muted-foreground">{course.category}</p>
+                  {courses.map((course) => {
+                    const enrolledCount = allEnrollments.filter(e => e.courseId === course.id).length;
+                    return (
+                      <TableRow key={course.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <img src={course.thumbnail} alt={course.title} className="h-10 w-16 rounded-md object-cover" />
+                            <div>
+                              <p className="font-medium line-clamp-1">{course.title}</p>
+                              <p className="text-xs text-muted-foreground">{course.category}</p>
+                            </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{course.instructor}</TableCell>
-                      <TableCell><Badge variant="secondary" className={levelColors[course.level]}>{course.level}</Badge></TableCell>
-                      <TableCell className="text-right font-medium">{course.enrolledCount.toLocaleString()}</TableCell>
-                      <TableCell className="text-right"><span className="text-accent font-medium">{course.rating}</span></TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleRemoveCourse(course.id, course.title)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{course.instructorName}</TableCell>
+                        <TableCell><Badge variant="secondary" className={levelColors[course.level]}>{course.level}</Badge></TableCell>
+                        <TableCell className="text-right font-medium">{enrolledCount.toLocaleString()}</TableCell>
+                        <TableCell className="text-right"><span className="text-accent font-medium">{course.rating}</span></TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleRemoveCourse(course.id, course.title)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

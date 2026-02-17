@@ -75,6 +75,9 @@ export interface Certificate {
     userId: string;
     instructorName: string;
     completedAt: string;
+    issueDate?: string; // alias for completedAt
+    studentName?: string;
+    courseName?: string;
 }
 
 interface CourseContextType {
@@ -91,7 +94,7 @@ interface CourseContextType {
     isEnrolled: (courseId: string) => boolean;
     getEnrollment: (courseId: string) => Enrollment | undefined;
     getCourseEnrollment: (courseId: string) => Enrollment | undefined; // Alias for getEnrollment to satisfy inconsistent usage
-    getCourseCompletionStatus: (courseId: string) => number;
+    getCourseCompletionStatus: (courseId: string) => { isCompleted: boolean; progress: number };
 
     // Writes (Course Management)
     addCourse: (data: any) => Promise<void>;
@@ -117,8 +120,8 @@ interface CourseContextType {
     submitQuizAttempt: (lessonId: string, answers: any[]) => Promise<any>;
     getBestAttempt: (lessonId: string) => any;
     generateCertificate: (courseId: string) => Promise<string>;
-    getCertificate: (courseId: string) => any;
-    getUserCertificates: (userId?: string) => any[];
+    getCertificate: (id: string) => Certificate | undefined;
+    getUserCertificates: (userId?: string) => Certificate[];
 }
 
 const CourseContext = createContext<CourseContextType | undefined>(undefined);
@@ -253,7 +256,8 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
                     courseId: c.course_id,
                     userId: c.user_id,
                     instructorName: c.instructor_name,
-                    completedAt: c.completed_at
+                    completedAt: c.completed_at,
+                    issueDate: c.completed_at
                 }));
             } catch (error) {
                 console.warn("Failed to fetch certificates", error);
@@ -371,7 +375,11 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
 
     const getCourseCompletionStatus = (courseId: string) => {
         const enrollment = getEnrollment(courseId);
-        return enrollment ? enrollment.progress : 0;
+        if (!enrollment) return { isCompleted: false, progress: 0 };
+        return {
+            isCompleted: enrollment.progress === 100,
+            progress: enrollment.progress
+        };
     };
 
 
@@ -455,7 +463,13 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
         const progress = Math.round((newCompletedLessons.length / totalLessons) * 100);
 
         await updateLessonProgress(enrollment.id, progress, newCompletedLessons);
-        toast.success("Lesson completed!");
+
+        if (progress === 100) {
+            await generateCertificate(courseId);
+            toast.success("Congratulations! You've completed the course and earned a certificate!");
+        } else {
+            toast.success("Lesson completed!");
+        }
     };
     const removeLesson = async (courseId: string, moduleId: string, lessonId: string) => {
         await removeLessonMutation.mutateAsync({ courseId, moduleId, lessonId });
@@ -475,12 +489,50 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
 
     // Certificate Stubs
     const generateCertificate = async (courseId: string) => {
-        return "cert-id-123";
+        const course = getCourse(courseId);
+        if (!course || !user) return "";
+
+        const newCert: Certificate = {
+            id: `cert-${Math.random().toString(36).substr(2, 9)}`,
+            courseId: courseId,
+            userId: user.id,
+            instructorName: course.instructorName || "Unknown Instructor",
+            completedAt: new Date().toISOString(),
+            issueDate: new Date().toISOString(),
+            courseName: course.title,
+            studentName: user.name || "Student"
+        };
+
+        // Update local state by manually updating the query cache
+        queryClient.setQueryData(['certificates', user.id], (old: Certificate[] = []) => [...old, newCert]);
+        return newCert.id;
     };
-    const getCertificate = (courseId: string) => {
-        return null;
+    const getCertificate = (id: string) => {
+        const cert = allCertificates.find(c => c.id === id);
+        if (!cert) return undefined;
+
+        const course = courses.find(c => c.id === cert.courseId);
+        const profile = profiles.find(p => p.id === cert.userId);
+
+        return {
+            ...cert,
+            courseName: course?.title || 'Unknown Course',
+            studentName: profile?.name || (cert.userId === user?.id ? user.name : 'Unknown Student')
+        };
     };
-    const getUserCertificates = (userId?: string) => [];
+
+    const getUserCertificates = (userId?: string) => {
+        const targetId = userId || user?.id;
+        if (!targetId) return [];
+
+        return allCertificates
+            .filter(c => c.userId === targetId)
+            .map(cert => ({
+                ...cert,
+                courseName: courses.find(c => c.id === cert.courseId)?.title || 'Unknown Course',
+                studentName: profiles.find(p => p.id === cert.userId)?.name || (cert.userId === user?.id ? user.name : 'Unknown Student')
+            }));
+    };
 
     return (
         <CourseContext.Provider value={{

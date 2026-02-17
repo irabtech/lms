@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+# Welcome to the IRAB Tech Learning Hub project
 
 ## Project info
 

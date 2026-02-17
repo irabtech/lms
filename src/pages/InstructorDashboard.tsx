@@ -12,19 +12,17 @@ import { BookOpen, Users, TrendingUp, Plus, Eye, Edit, GraduationCap } from 'luc
 
 const InstructorDashboard = () => {
   const { user } = useAuth();
-  const { courses, enrollments } = useCourses();
+  const { courses, allEnrollments } = useCourses();
 
   const instructorCourses = courses.filter(c => c.instructorId === user?.id);
+  const instructorCourseIds = instructorCourses.map(c => c.id);
   const publishedCourses = instructorCourses.filter(c => c.isPublished);
-  const totalStudents = instructorCourses.reduce((sum, c) => sum + c.enrolledCount, 0);
 
-  const avgCompletion = instructorCourses.length > 0
-    ? Math.round(
-      enrollments
-        .filter(e => instructorCourses.some(c => c.id === e.courseId))
-        .reduce((sum, e) => sum + e.progress, 0) /
-      Math.max(enrollments.filter(e => instructorCourses.some(c => c.id === e.courseId)).length, 1)
-    )
+  const relevantEnrollments = allEnrollments.filter(e => instructorCourseIds.includes(e.courseId));
+  const totalStudents = relevantEnrollments.length;
+
+  const avgCompletion = relevantEnrollments.length > 0
+    ? Math.round(relevantEnrollments.reduce((sum, e) => sum + e.progress, 0) / relevantEnrollments.length)
     : 0;
 
   return (
@@ -99,9 +97,10 @@ const InstructorDashboard = () => {
             {instructorCourses.length > 0 ? (
               <div className="space-y-4">
                 {instructorCourses.slice(0, 5).map((course) => {
-                  const courseEnrollments = enrollments.filter(e => e.courseId === course.id);
-                  const avgProgress = courseEnrollments.length > 0
-                    ? Math.round(courseEnrollments.reduce((s, e) => s + e.progress, 0) / courseEnrollments.length)
+                  const courseEnrollments = allEnrollments.filter(e => e.courseId === course.id);
+                  const enrolledCount = courseEnrollments.length;
+                  const avgProgress = enrolledCount > 0
+                    ? Math.round(courseEnrollments.reduce((s, e) => s + e.progress, 0) / enrolledCount)
                     : 0;
 
                   return (
@@ -119,7 +118,7 @@ const InstructorDashboard = () => {
                           </Badge>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>{course.enrolledCount} students</span>
+                          <span>{enrolledCount} students</span>
                           <span>{course.modules?.length || 0} modules</span>
                         </div>
                         <div className="mt-2">
