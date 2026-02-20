@@ -51,6 +51,7 @@ export interface Enrollment {
     progress: number;
     completedLessons: string[]; // mapped from completed_lessons
     enrolledAt: string;
+    certificateId?: string;
 }
 
 export interface QuizAttempt {
@@ -508,7 +509,29 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
         return newCert.id;
     };
     const getCertificate = (id: string) => {
-        const cert = allCertificates.find(c => c.id === id);
+        let cert: Certificate | undefined = allCertificates.find(c => c.id === id);
+
+        if (!cert && id.startsWith('derived-')) {
+            const enrollmentId = id.replace('derived-', '');
+            // Check both local enrollments and allEnrollments if available
+            const enrollment = enrollments.find(e => e.id === enrollmentId) ||
+                allEnrollments.find(e => e.id === enrollmentId);
+
+            if (enrollment && enrollment.progress === 100) {
+                const course = courses.find(c => c.id === enrollment.courseId);
+                cert = {
+                    id: id,
+                    courseId: enrollment.courseId,
+                    userId: enrollment.userId,
+                    instructorName: course?.instructorName || "Unknown Instructor",
+                    completedAt: enrollment.enrolledAt,
+                    issueDate: enrollment.enrolledAt,
+                    courseName: course?.title || 'Unknown Course',
+                    studentName: user?.name || "Student"
+                } as Certificate;
+            }
+        }
+
         if (!cert) return undefined;
 
         const course = courses.find(c => c.id === cert.courseId);
@@ -516,8 +539,8 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
 
         return {
             ...cert,
-            courseName: course?.title || 'Unknown Course',
-            studentName: profile?.name || (cert.userId === user?.id ? user.name : 'Unknown Student')
+            courseName: course?.title || cert.courseName || 'Unknown Course',
+            studentName: profile?.name || (cert.userId === user?.id ? user.name : cert.studentName || 'Unknown Student')
         };
     };
 
@@ -525,13 +548,39 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
         const targetId = userId || user?.id;
         if (!targetId) return [];
 
-        return allCertificates
-            .filter(c => c.userId === targetId)
-            .map(cert => ({
+        // Start with actual certificate records
+        const actualCerts = allCertificates.filter(c => c.userId === targetId);
+
+        // Find 100% completed enrollments that don't have a certificate yet
+        const completedEnrollments = enrollments.filter(e => e.userId === targetId && e.progress === 100);
+
+        const derivedCerts: Certificate[] = completedEnrollments
+            .filter(e => !actualCerts.some(c => c.courseId === e.courseId))
+            .map(e => {
+                const course = courses.find(c => c.id === e.courseId);
+                return {
+                    id: `derived-${e.id}`,
+                    courseId: e.courseId,
+                    userId: e.userId,
+                    instructorName: course?.instructorName || "Unknown Instructor",
+                    completedAt: e.enrolledAt,
+                    issueDate: e.enrolledAt,
+                    courseName: course?.title || 'Unknown Course',
+                    studentName: user?.name || "Student"
+                };
+            });
+
+        const allPossibleCerts: Certificate[] = [...actualCerts, ...derivedCerts];
+        return allPossibleCerts.map(cert => {
+            const course = courses.find(c => c.id === cert.courseId);
+            const profile = profiles.find(p => p.id === cert.userId);
+
+            return {
                 ...cert,
-                courseName: courses.find(c => c.id === cert.courseId)?.title || 'Unknown Course',
-                studentName: profiles.find(p => p.id === cert.userId)?.name || (cert.userId === user?.id ? user.name : 'Unknown Student')
-            }));
+                courseName: course?.title || cert.courseName || 'Unknown Course',
+                studentName: profile?.name || (cert.userId === user?.id ? user.name : cert.studentName || 'Unknown Student')
+            };
+        });
     };
 
     return (

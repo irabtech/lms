@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 const BASE_URL = "https://jeqotvuzlygdrexfduct.supabase.co/functions/v1";
@@ -73,6 +74,7 @@ async function supabaseDirect<T>(table: string, method: RequestMethod = 'GET', b
     }
     return data as T;
 }
+
 
 export const api = {
     auth: {

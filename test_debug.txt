@@ -1,8 +1,15 @@
 Testing connection to: https://jeqotvuzlygdrexfduct.supabase.co
+Table [courses]: FOUND (6 rows)
+Table [instructor_courses]: FOUND (null rows)
+Table [new_courses]: FOUND (null rows)
+Table [profiles]: FOUND (10 rows)
+Table [user_roles]: FOUND (0 rows)
+Table [enrollments]: FOUND (0 rows)
 
---- Fetching ALL Courses (Raw) ---
-Total Courses in DB: 1
-- [6652e74e-77b1-4e52-aad8-1ef8f70bc176] Introduction to Wordpress (Published: true, Instructor: ac3e6864-5684-4578-aabe-7c771f872603)
-
---- Enrollment Logic Test ---
-Visible Enrollments (Anonymous): 0
+--- Recent Courses (All) ---
+- [ad10993a-fbef-41d0-af29-78a88fe5cfe7] SQL (2026-01-22T13:36:33.856999+00:00) by 7ff3f083-4f58-4529-aa97-4260d93af84e
+- [1ab8f0fb-295d-4a61-93ca-35b209042e0d] Graphic Designing (2026-01-21T09:57:18.826257+00:00) by e5f6a26f-fcf8-408b-8956-852f7c288345
+- [3b5c7a58-4415-473e-bbcf-d6b99af20f21] Introduction to REACT (2026-01-21T06:37:16.436012+00:00) by 7ff3f083-4f58-4529-aa97-4260d93af84e
+- [4feeda43-2a6b-4a69-8ff6-bd9a6cd295f1] Introduction to Python (2026-01-21T06:09:24.420526+00:00) by 7ff3f083-4f58-4529-aa97-4260d93af84e
+- [3433a182-537c-42ac-82d1-efcc729edbac] Web Development (2026-01-20T10:14:22.706081+00:00) by ac3e6864-5684-4578-aabe-7c771f872603
+- [6652e74e-77b1-4e52-aad8-1ef8f70bc176] Introduction to Wordpress (2026-01-20T09:56:46.482517+00:00) by ac3e6864-5684-4578-aabe-7c771f872603

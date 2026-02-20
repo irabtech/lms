@@ -273,7 +273,7 @@ export const mockUsers: User[] = [
     email: 'david@example.com',
     role: 'instructor',
     avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face',
-    bio: 'Data scientist with expertise in Python, ML, and AI. PhD from MIT.',
+    bio: 'Data scientist with expertise in Python and ML. PhD from MIT.',
     joinedAt: '2023-10-01',
   },
   {
@@ -288,28 +288,28 @@ export const mockUsers: User[] = [
 ];
 
 export const mockEnrollments: Enrollment[] = [
-  { 
-    courseId: '1', 
+  {
+    courseId: '1',
     userId: 'user1',
-    progress: 75, 
+    progress: 75,
     lessonProgress: { '1-mod-1-les-1': true, '1-mod-1-les-2': true, '1-mod-2-les-1': true },
-    enrolledAt: '2024-01-15' 
+    enrolledAt: '2024-01-15'
   },
-  { 
-    courseId: '3', 
+  {
+    courseId: '3',
     userId: 'user1',
-    progress: 100, 
+    progress: 100,
     lessonProgress: {},
     enrolledAt: '2024-02-01',
     completedAt: '2024-03-15',
     certificateId: 'cert-1'
   },
-  { 
-    courseId: '4', 
+  {
+    courseId: '4',
     userId: 'user1',
-    progress: 10, 
+    progress: 10,
     lessonProgress: { '4-mod-1-les-1': true },
-    enrolledAt: '2024-02-10' 
+    enrolledAt: '2024-02-10'
   },
 ];
 
