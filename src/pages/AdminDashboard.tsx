@@ -64,7 +64,7 @@ const AdminDashboard = () => {
             <p className="text-muted-foreground">Manage courses and monitor platform performance.</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild><Button size="lg"><Plus className="h-4 w-4" />Add Course</Button></DialogTrigger>
+            {/* <DialogTrigger asChild><Button size="lg"><Plus className="h-4 w-4" />Add Course</Button></DialogTrigger> */}
             <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>Add New Course</DialogTitle>
