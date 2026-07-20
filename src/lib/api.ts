@@ -1,33 +1,136 @@
+// import { supabase } from '@/integrations/supabase/client';
+
+// const BASE_URL = "https://jeqotvuzlygdrexfduct.supabase.co/functions/v1";
+// const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// type RequestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+// /**
+//  * ALWAYS get a valid Supabase auth header.
+//  * - Logged in → real JWT
+//  * - Logged out → anon key (still required)
+//  */
+// async function getAuthHeader(): Promise<string> {
+//     const { data } = await supabase.auth.getSession();
+//     const accessToken = data.session?.access_token;
+//     return `Bearer ${accessToken ?? ANON_KEY}`;
+// }
+
+// async function fetchWrapper<T>(
+//     endpoint: string,
+//     method: RequestMethod = 'GET',
+//     body?: any
+// ): Promise<T> {
+
+//     const authHeader = await getAuthHeader();
+
+//     const headers: HeadersInit = {
+//         'Content-Type': 'application/json',
+//         'apikey': ANON_KEY,
+//         'Authorization': authHeader,
+//     };
+
+//     console.log(`[API] ${method} ${endpoint}`, { headers, body });
+
+//     const options: RequestInit = {
+//         method,
+//         headers,
+//         body: body ? JSON.stringify(body) : undefined,
+//     };
+
+//     const response = await fetch(`${BASE_URL}${endpoint}`, options);
+
+//     if (!response.ok) {
+//         const errorData = await response.json().catch(() => ({}));
+//         throw new Error(
+//             errorData.error ||
+//             errorData.message ||
+//             `API Error: ${response.status}`
+//         );
+//     }
+
+//     // Handle empty responses safely
+//     const text = await response.text();
+//     return text ? JSON.parse(text) : ({} as T);
+// }
+
+// async function supabaseDirect<T>(
+//     table: string,
+//     method: RequestMethod = 'GET',
+//     body?: any,
+//     query: string = '',
+//     single: boolean = false
+// ): Promise<T> {
+
+//     const authHeader = await getAuthHeader();
+//     const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/${table}${query}`;
+
+//     const headers: HeadersInit = {
+//         'apikey': ANON_KEY,
+//         'Authorization': authHeader,
+//         'Content-Type': 'application/json',
+//         'Prefer': 'return=representation'
+//     };
+
+//     console.log(`[Supabase Direct] ${method} ${table}${query}`, { body });
+
+//     const options: RequestInit = {
+//         method,
+//         headers,
+//         body: body ? JSON.stringify(body) : undefined,
+//     };
+
+//     const response = await fetch(url, options);
+
+//     if (!response.ok) {
+//         const errorData = await response.json().catch(() => ({}));
+//         console.error(`[Supabase Direct] Error:`, errorData);
+//         throw new Error(
+//             errorData.message ||
+//             errorData.error ||
+//             `DB Error: ${response.status}`
+//         );
+//     }
+
+//     const data = await response.json();
+//     if (single && Array.isArray(data)) {
+//         return data[0] as T;
+//     }
+//     return data as T;
+
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { supabase } from '@/integrations/supabase/client';
 
-const BASE_URL = "https://jeqotvuzlygdrexfduct.supabase.co/functions/v1";
-const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 type RequestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-/**
- * ALWAYS get a valid Supabase auth header.
- * - Logged in → real JWT
- * - Logged out → anon key (still required)
- */
-async function getAuthHeader(): Promise<string> {
-    const { data } = await supabase.auth.getSession();
-    const accessToken = data.session?.access_token;
-    return `Bearer ${accessToken ?? ANON_KEY}`;
-}
-
-async function fetchWrapper<T>(
-    endpoint: string,
-    method: RequestMethod = 'GET',
-    body?: any
-): Promise<T> {
-
-    const authHeader = await getAuthHeader();
+async function fetchWrapper<T>(endpoint: string, method: RequestMethod = 'GET', body?: any): Promise<T> {
+    const token = localStorage.getItem('token');
 
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
         'apikey': ANON_KEY,
-        'Authorization': authHeader,
+        'Authorization': `Bearer ${token ?? ANON_KEY}`,
     };
 
     console.log(`[API] ${method} ${endpoint}`, { headers, body });
@@ -42,34 +145,23 @@ async function fetchWrapper<T>(
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-            errorData.error ||
-            errorData.message ||
-            `API Error: ${response.status}`
-        );
+        throw new Error(errorData.error || errorData.message || `API Error: ${response.status}`);
     }
 
-    // Handle empty responses safely
+    // Handle empty responses (e.g., 204 No Content or strictly empty 200)
     const text = await response.text();
-    return text ? JSON.parse(text) : ({} as T);
+    return text ? JSON.parse(text) : {} as T;
 }
 
-async function supabaseDirect<T>(
-    table: string,
-    method: RequestMethod = 'GET',
-    body?: any,
-    query: string = '',
-    single: boolean = false
-): Promise<T> {
-
-    const authHeader = await getAuthHeader();
+async function supabaseDirect<T>(table: string, method: RequestMethod = 'GET', body?: any, query: string = '', single: boolean = false): Promise<T> {
+    const token = localStorage.getItem('token');
     const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/${table}${query}`;
 
     const headers: HeadersInit = {
         'apikey': ANON_KEY,
-        'Authorization': authHeader,
         'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
+        'Prefer': 'return=representation',
+        'Authorization': `Bearer ${token ?? ANON_KEY}`,
     };
 
     console.log(`[Supabase Direct] ${method} ${table}${query}`, { body });
@@ -85,11 +177,7 @@ async function supabaseDirect<T>(
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error(`[Supabase Direct] Error:`, errorData);
-        throw new Error(
-            errorData.message ||
-            errorData.error ||
-            `DB Error: ${response.status}`
-        );
+        throw new Error(errorData.message || errorData.error || `DB Error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -98,81 +186,6 @@ async function supabaseDirect<T>(
     }
     return data as T;
 }
-// import { supabase } from '@/integrations/supabase/client';
-
-// const BASE_URL = "https://jeqotvuzlygdrexfduct.supabase.co/functions/v1";
-// const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-// type RequestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-
-// async function fetchWrapper<T>(endpoint: string, method: RequestMethod = 'GET', body?: any): Promise<T> {
-//     const token = localStorage.getItem('token');
-
-//     const headers: HeadersInit = {
-//         'Content-Type': 'application/json',
-//         'apikey': ANON_KEY,
-//     };
-
-//     if (token) {
-//         headers['Authorization'] = `Bearer ${token}`;
-//     }
-
-//     console.log(`[API] ${method} ${endpoint}`, { headers, body });
-
-//     const options: RequestInit = {
-//         method,
-//         headers,
-//         body: body ? JSON.stringify(body) : undefined,
-//     };
-
-//     const response = await fetch(`${BASE_URL}${endpoint}`, options);
-
-//     if (!response.ok) {
-//         const errorData = await response.json().catch(() => ({}));
-//         throw new Error(errorData.error || errorData.message || `API Error: ${response.status}`);
-//     }
-
-//     // Handle empty responses (e.g., 204 No Content or strictly empty 200)
-//     const text = await response.text();
-//     return text ? JSON.parse(text) : {} as T;
-// }
-
-// async function supabaseDirect<T>(table: string, method: RequestMethod = 'GET', body?: any, query: string = '', single: boolean = false): Promise<T> {
-//     const token = localStorage.getItem('token');
-//     const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/${table}${query}`;
-
-//     const headers: HeadersInit = {
-//         'apikey': ANON_KEY,
-//         'Content-Type': 'application/json',
-//         'Prefer': 'return=representation'
-//     };
-
-//     if (token) {
-//         headers['Authorization'] = `Bearer ${token}`;
-//     }
-
-//     console.log(`[Supabase Direct] ${method} ${table}${query}`, { body });
-
-//     const options: RequestInit = {
-//         method,
-//         headers,
-//         body: body ? JSON.stringify(body) : undefined,
-//     };
-
-//     const response = await fetch(url, options);
-
-//     if (!response.ok) {
-//         const errorData = await response.json().catch(() => ({}));
-//         console.error(`[Supabase Direct] Error:`, errorData);
-//         throw new Error(errorData.message || errorData.error || `DB Error: ${response.status}`);
-//     }
-
-//     const data = await response.json();
-//     if (single && Array.isArray(data)) {
-//         return data[0] as T;
-//     }
-//     return data as T;
-// }
 
 
 export const api = {

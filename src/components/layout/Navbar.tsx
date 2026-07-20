@@ -69,14 +69,14 @@ const Navbar = () => {
                 <BarChart3 className="h-4 w-4" />
                 Analytics
               </Link>
-              <Link
+              {/* <Link
                 to="/admin/users"
                 className={`flex items-center gap-2 text-sm font-medium transition-colors ${isActive('/admin/users') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                   }`}
               >
                 <Users className="h-4 w-4" />
                 Users
-              </Link>
+              </Link> */}
             </>
           )}
 
