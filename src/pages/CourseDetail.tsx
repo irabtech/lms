@@ -110,11 +110,11 @@ const CourseDetail = () => {
                         <Button variant="outline" className="w-full" onClick={handleUnenroll}>Unenroll</Button>
                       )}
                     </>
-                  ) : (
+                  ) : !hasRole('ADMIN') ? (
                     <Button className="w-full" size="lg" onClick={handleEnroll}>
                       Enroll Now — {course.isFree ? 'Free' : `$${course.price}`}
                     </Button>
-                  )}
+                  ) : null}
                 </div>
 
                 <div className="mt-6 pt-6 border-t space-y-3 text-sm">

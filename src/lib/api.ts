@@ -347,7 +347,7 @@ export const api = {
             fetchWrapper<any>(`/lessons/${lessonId}`, 'PUT', data),
 
         removeLesson: (courseId: string, moduleId: string, lessonId: string) =>
-            fetchWrapper<any>(`/lessons/${lessonId}`, 'DELETE'),
+            supabaseDirect<any>('lessons', 'DELETE', undefined, `?id=eq.${lessonId}`),
     },
 
     enrollments: {

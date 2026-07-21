@@ -16,7 +16,7 @@ const QuizPage = () => {
   const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { getCourse, getQuiz, submitQuizAttempt, getBestAttempt, generateCertificate, getCourseCompletionStatus, updateLessonProgress } = useCourses();
+  const { getCourse, getQuiz, submitQuizAttempt, getBestAttempt, generateCertificate, getCourseCompletionStatus, completeLesson } = useCourses();
 
   const course = getCourse(courseId || '');
   const quiz = getQuiz(lessonId || '');
@@ -59,25 +59,29 @@ const QuizPage = () => {
   };
 
   const handleSubmit = () => {
-    const attemptAnswers = quiz.questions.map(q => ({
-      questionId: q.id,
-      selectedAnswer: answers[q.id] ?? -1,
-    }));
-
-    const attemptResult = submitQuizAttempt({
-      quizId: quiz.id,
-      userId: user?.id || 'user1',
-      answers: attemptAnswers,
+    let correctCount = 0;
+    quiz.questions.forEach(q => {
+      const userAns = answers[q.id];
+      if (quiz.type === 'text' || q.type === 'text' || !q.options || q.options.length === 0) {
+        if (userAns && String(userAns).trim().length > 0) correctCount++;
+      } else {
+        if (Number(userAns) === q.correctAnswer) correctCount++;
+      }
     });
 
-    setResult({ score: attemptResult.score, passed: attemptResult.passed });
+    const calculatedScore = Math.round((correctCount / quiz.questions.length) * 100);
+    const passed = calculatedScore >= (quiz.passingScore || 70);
+
+    submitQuizAttempt(quiz.id, quiz.questions.map(q => ({ questionId: q.id, selectedAnswer: answers[q.id] })));
+    if (passed && lessonId) {
+      completeLesson(courseId || '', lessonId);
+    }
+
+    setResult({ score: calculatedScore, passed });
     setSubmitted(true);
 
-    if (attemptResult.passed) {
-      updateLessonProgress(courseId || '', lessonId || '', user?.id || 'user1', true);
+    if (passed) {
       toast.success('Congratulations! You passed the quiz!');
-
-      // Check if course is now completed
       const status = getCourseCompletionStatus(courseId || '');
       if (status.isCompleted) {
         generateCertificate(courseId || '');
@@ -164,23 +168,36 @@ const QuizPage = () => {
           <CardContent className="p-6">
             <div className="mb-8">
               <h3 className="text-lg font-medium mb-4">{question.text}</h3>
-              <RadioGroup value={answers[question.id]?.toString()} onValueChange={handleAnswer}>
-                {question.options.map((option, i) => (
-                  <div key={i} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                    <RadioGroupItem value={i.toString()} id={`option-${i}`} />
-                    <Label htmlFor={`option-${i}`} className="flex-1 cursor-pointer">{option}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
+              {quiz.type === 'text' || question.type === 'text' || !question.options || question.options.length === 0 ? (
+                <div className="space-y-2">
+                  <Label htmlFor="text-answer">Your Answer</Label>
+                  <textarea
+                    id="text-answer"
+                    className="w-full min-h-[120px] p-3 rounded-md border border-input bg-background text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    placeholder="Type your response here..."
+                    value={answers[question.id] !== undefined ? String(answers[question.id]) : ''}
+                    onChange={(e) => setAnswers({ ...answers, [question.id]: e.target.value as any })}
+                  />
+                </div>
+              ) : (
+                <RadioGroup value={answers[question.id]?.toString()} onValueChange={handleAnswer}>
+                  {question.options.map((option, i) => (
+                    <div key={i} className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                      <RadioGroupItem value={i.toString()} id={`option-${i}`} />
+                      <Label htmlFor={`option-${i}`} className="flex-1 cursor-pointer">{option}</Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              )}
             </div>
 
             <div className="flex justify-between">
               <Button variant="outline" onClick={handlePrevious} disabled={currentQuestion === 0}>Previous</Button>
               <div className="flex gap-2">
                 {currentQuestion === quiz.questions.length - 1 ? (
-                  <Button onClick={handleSubmit} disabled={Object.keys(answers).length !== quiz.questions.length}>Submit Quiz</Button>
+                  <Button onClick={handleSubmit} disabled={answers[question.id] === undefined || answers[question.id] === ''}>Submit Quiz</Button>
                 ) : (
-                  <Button onClick={handleNext} disabled={answers[question.id] === undefined}>Next</Button>
+                  <Button onClick={handleNext} disabled={answers[question.id] === undefined || answers[question.id] === ''}>Next</Button>
                 )}
               </div>
             </div>

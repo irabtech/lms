@@ -2,6 +2,7 @@ import React, { createContext, useContext, ReactNode } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { mockQuizzes } from '@/data/mockData';
 import { toast } from 'sonner';
 
 // --- Types (Frontend - CamelCase) ---
@@ -22,6 +23,15 @@ export interface Lesson {
     duration: string;
     videoUrl?: string; // mapped from video_url
     isFree: boolean; // mapped from is_free
+    quizData?: {
+        type: 'mcq' | 'text';
+        questions: Array<{
+            id: string;
+            text: string;
+            options?: string[];
+            correctAnswer?: number;
+        }>;
+    };
 }
 
 export interface Course {
@@ -157,7 +167,8 @@ const mapCourseFromApi = (data: any): Course => ({
             type: (l.content_type || 'VIDEO').toLowerCase() as 'video' | 'text' | 'quiz',
             duration: l.duration || '',
             videoUrl: l.video_url || '',
-            isFree: l.is_free || false
+            isFree: l.is_free || false,
+            quizData: l.quiz_data || (l.content ? (() => { try { return JSON.parse(l.content); } catch { return undefined; } })() : undefined)
         }))
     })),
     isFree: data.price === 0
@@ -433,18 +444,24 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
     const addLesson = async (courseId: string, moduleId: string, data: any) => {
         const apiData = { ...data };
         if (apiData.contentType) { apiData.content_type = apiData.contentType.toUpperCase(); delete apiData.contentType; }
-        // Handle 'article' or 'text' -> 'TEXT'
         if (apiData.content_type === 'ARTICLE' || apiData.content_type === 'TEXT') apiData.content_type = 'TEXT';
         if (apiData.videoUrl) { apiData.video_url = apiData.videoUrl; delete apiData.videoUrl; }
+        if (apiData.quizData) {
+            apiData.content = JSON.stringify(apiData.quizData);
+            delete apiData.quizData;
+        }
         await addLessonMutation.mutateAsync({ courseId, moduleId, data: apiData });
     };
 
     const updateLesson = async (courseId: string, moduleId: string, lessonId: string, data: any) => {
         const apiData = { ...data };
         if (apiData.contentType) { apiData.content_type = apiData.contentType.toUpperCase(); delete apiData.contentType; }
-        // Handle 'article' or 'text' -> 'TEXT'
         if (apiData.content_type === 'ARTICLE' || apiData.content_type === 'TEXT') apiData.content_type = 'TEXT';
         if (apiData.videoUrl) { apiData.video_url = apiData.videoUrl; delete apiData.videoUrl; }
+        if (apiData.quizData) {
+            apiData.content = JSON.stringify(apiData.quizData);
+            delete apiData.quizData;
+        }
         await updateLessonMutation.mutateAsync({ courseId, moduleId, lessonId, data: apiData });
     };
 
@@ -478,8 +495,50 @@ export const CourseProvider = ({ children }: { children: ReactNode }) => {
 
     // Quiz Stubs
     const getQuiz = (lessonId: string) => {
-        // Return dummy quiz data or undefined
-        return null;
+        // 1. Look for custom quizData on lesson
+        for (const c of courses) {
+            for (const m of c.modules || []) {
+                const l = (m.lessons || []).find(l => l.id === lessonId);
+                if (l) {
+                    if (l.quizData && l.quizData.questions && l.quizData.questions.length > 0) {
+                        return {
+                            id: `quiz-${l.id}`,
+                            lessonId: l.id,
+                            courseId: c.id,
+                            title: `${l.title} Quiz`,
+                            passingScore: 70,
+                            type: l.quizData.type,
+                            questions: l.quizData.questions
+                        };
+                    }
+                    // 2. Fallback to mockQuizzes if match found by lessonId
+                    const mock = mockQuizzes.find(q => q.lessonId === lessonId);
+                    if (mock) return mock;
+
+                    // 3. Fallback for any quiz-typed lesson or lesson taking quiz
+                    if (l.type === 'quiz') {
+                        return {
+                            id: `quiz-${l.id}`,
+                            lessonId: l.id,
+                            courseId: c.id,
+                            title: `${l.title} Quiz`,
+                            passingScore: 70,
+                            type: 'mcq',
+                            questions: [
+                                {
+                                    id: 'q1',
+                                    text: `What is the primary topic of ${l.title}?`,
+                                    type: 'mcq',
+                                    options: ['Understanding key concepts', 'Basic syntax', 'Advanced patterns', 'Overview'],
+                                    correctAnswer: 0
+                                }
+                            ]
+                        };
+                    }
+                }
+            }
+        }
+        return mockQuizzes.find(q => q.lessonId === lessonId) || null;
     };
     const submitQuizAttempt = async (lessonId: string, answers: any[]) => {
         return { passed: true, score: 100 };

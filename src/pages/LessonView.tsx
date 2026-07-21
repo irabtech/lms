@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, ArrowRight, CheckCircle2, Play, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Play, FileText, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react';
 
 const LessonView = () => {
     const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
@@ -126,13 +126,32 @@ const LessonView = () => {
                         )}
 
                         {/* Lesson Content */}
-                        <div className="prose prose-slate max-w-none dark:prose-invert mb-12">
-                            {lesson.content ? (
+                        <div className="prose prose-slate max-w-none dark:prose-invert mb-8">
+                            {lesson.content && !lesson.content.trim().startsWith('{') ? (
                                 <div dangerouslySetInnerHTML={{ __html: lesson.content.replace(/\n/g, '<br/>') }} />
-                            ) : (
+                            ) : lesson.type !== 'quiz' ? (
                                 <p className="text-muted-foreground italic">No additional content provided for this lesson.</p>
-                            )}
+                            ) : null}
                         </div>
+
+                        {/* Quiz Section (Unified inside Lesson View) */}
+                        {(lesson.type === 'quiz' || (lesson as any).quizData) && (
+                            <Card className="mb-12 border-primary/20 bg-primary/5 shadow-sm">
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <div>
+                                        <CardTitle className="text-xl font-display flex items-center gap-2">
+                                            <HelpCircle className="h-5 w-5 text-primary" /> Lesson Quiz
+                                        </CardTitle>
+                                        <p className="text-xs text-muted-foreground mt-1">Test your understanding of this lesson.</p>
+                                    </div>
+                                    <Button asChild>
+                                        <Link to={`/course/${course.id}/quiz/${lesson.id}`}>
+                                            Take Quiz <ArrowRight className="h-4 w-4 ml-2" />
+                                        </Link>
+                                    </Button>
+                                </CardHeader>
+                            </Card>
+                        )}
 
                         {/* Navigation Footer */}
                         <div className="flex items-center justify-between pt-8 border-t">

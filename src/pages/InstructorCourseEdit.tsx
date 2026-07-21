@@ -27,7 +27,17 @@ const InstructorCourseEdit = () => {
   const [selectedModuleId, setSelectedModuleId] = useState<string>('');
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [newModule, setNewModule] = useState({ title: '', description: '' });
-  const [newLesson, setNewLesson] = useState({ title: '', duration: '', contentType: 'video' as 'video' | 'text' | 'quiz', content: '', videoUrl: '' });
+  const [newLesson, setNewLesson] = useState<{
+    title: string;
+    duration: string;
+    contentType: 'video' | 'text' | 'quiz';
+    content: string;
+    videoUrl: string;
+    quizData?: {
+      type: 'mcq' | 'text';
+      questions: Array<{ id: string; text: string; options?: string[]; correctAnswer?: number }>;
+    };
+  }>({ title: '', duration: '', contentType: 'video', content: '', videoUrl: '' });
 
   if (!course) {
     return (
@@ -77,11 +87,12 @@ const InstructorCourseEdit = () => {
         duration: lesson.duration,
         contentType: lesson.type,
         content: lesson.content || '',
-        videoUrl: lesson.videoUrl || ''
+        videoUrl: lesson.videoUrl || '',
+        quizData: lesson.quizData || (lesson.type === 'quiz' ? { type: 'mcq', questions: [{ id: 'q1', text: '', options: ['', '', '', ''], correctAnswer: 0 }] } : undefined)
       });
     } else {
       setEditingLessonId(null);
-      setNewLesson({ title: '', duration: '', contentType: 'video', content: '', videoUrl: '' });
+      setNewLesson({ title: '', duration: '', contentType: 'video', content: '', videoUrl: '', quizData: { type: 'mcq', questions: [{ id: 'q1', text: '', options: ['', '', '', ''], correctAnswer: 0 }] } });
     }
     setIsLessonDialogOpen(true);
   };
@@ -247,7 +258,7 @@ const InstructorCourseEdit = () => {
 
         {/* Add Lesson Dialog */}
         <Dialog open={isLessonDialogOpen} onOpenChange={setIsLessonDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle>{editingLessonId ? 'Edit Lesson' : 'Add Lesson'}</DialogTitle></DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
@@ -272,10 +283,111 @@ const InstructorCourseEdit = () => {
                 </div>
               </div>
 
-              {newLesson.contentType === 'video' && (
-                <div className="space-y-2">
-                  <Label>Video URL</Label>
-                  <Input value={newLesson.videoUrl} onChange={(e) => setNewLesson({ ...newLesson, videoUrl: e.target.value })} placeholder="YouTube or Vimeo URL" />
+              {newLesson.contentType === 'quiz' && (
+                <div className="space-y-4 border p-3 rounded-md bg-muted/20">
+                  <div className="space-y-2">
+                    <Label>Quiz Mode</Label>
+                    <Select 
+                      value={newLesson.quizData?.type || 'mcq'} 
+                      onValueChange={(v) => setNewLesson({
+                        ...newLesson, 
+                        quizData: { 
+                          type: v as 'mcq' | 'text', 
+                          questions: newLesson.quizData?.questions?.length ? newLesson.quizData.questions : [{ id: 'q1', text: '', options: ['', '', '', ''], correctAnswer: 0 }] 
+                        }
+                      })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mcq">Multiple Choice (MCQ)</SelectItem>
+                        <SelectItem value="text">Open-ended Text Answer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold">Quiz Questions / Prompts</Label>
+                    {(newLesson.quizData?.questions || []).map((q: any, qIdx: number) => (
+                      <div key={qIdx} className="space-y-2 p-3 bg-background border rounded shadow-sm text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">Question {qIdx + 1}</span>
+                          {(newLesson.quizData?.questions || []).length > 1 && (
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0 text-destructive"
+                              onClick={() => {
+                                const updated = newLesson.quizData.questions.filter((_: any, idx: number) => idx !== qIdx);
+                                setNewLesson({ ...newLesson, quizData: { ...newLesson.quizData, questions: updated } });
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                        <Input 
+                          placeholder="Enter question text / prompt..." 
+                          value={q.text}
+                          onChange={(e) => {
+                            const updated = [...(newLesson.quizData?.questions || [])];
+                            updated[qIdx] = { ...updated[qIdx], text: e.target.value };
+                            setNewLesson({ ...newLesson, quizData: { ...newLesson.quizData, questions: updated } });
+                          }}
+                        />
+                        {newLesson.quizData?.type === 'mcq' && (
+                          <div className="space-y-1 mt-2">
+                            <Label className="text-[11px] text-muted-foreground">Options (select correct answer radio)</Label>
+                            {(q.options || ['', '', '', '']).map((opt: string, optIdx: number) => (
+                              <div key={optIdx} className="flex items-center gap-2">
+                                <input 
+                                  type="radio" 
+                                  name={`correct-${qIdx}`} 
+                                  checked={q.correctAnswer === optIdx} 
+                                  onChange={() => {
+                                    const updated = [...(newLesson.quizData?.questions || [])];
+                                    updated[qIdx] = { ...updated[qIdx], correctAnswer: optIdx };
+                                    setNewLesson({ ...newLesson, quizData: { ...newLesson.quizData, questions: updated } });
+                                  }}
+                                />
+                                <Input 
+                                  className="h-7 text-xs" 
+                                  placeholder={`Option ${optIdx + 1}`}
+                                  value={opt}
+                                  onChange={(e) => {
+                                    const updated = [...(newLesson.quizData?.questions || [])];
+                                    const newOpts = [...(updated[qIdx].options || ['', '', '', ''])];
+                                    newOpts[optIdx] = e.target.value;
+                                    updated[qIdx] = { ...updated[qIdx], options: newOpts };
+                                    setNewLesson({ ...newLesson, quizData: { ...newLesson.quizData, questions: updated } });
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full text-xs"
+                      onClick={() => {
+                        const current = newLesson.quizData?.questions || [];
+                        const newQ = { id: `q${current.length + 1}`, text: '', options: ['', '', '', ''], correctAnswer: 0 };
+                        setNewLesson({
+                          ...newLesson,
+                          quizData: {
+                            type: newLesson.quizData?.type || 'mcq',
+                            questions: [...current, newQ]
+                          }
+                        });
+                      }}
+                    >
+                      <Plus className="h-3 w-3 mr-1" /> Add Question
+                    </Button>
+                  </div>
                 </div>
               )}
 
