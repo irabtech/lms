@@ -65,10 +65,14 @@ const InstructorCourseEdit = () => {
   const handleAddLesson = async () => {
     if (!newLesson.title || !selectedModuleId) { toast.error('Lesson title is required'); return; }
     try {
+      const lessonPayload = { ...newLesson };
+      if (lessonPayload.contentType !== 'quiz') {
+        delete lessonPayload.quizData;
+      }
       if (editingLessonId) {
-        await updateLesson(course.id, selectedModuleId, editingLessonId, newLesson);
+        await updateLesson(course.id, selectedModuleId, editingLessonId, lessonPayload);
       } else {
-        await addLesson(course.id, selectedModuleId, newLesson);
+        await addLesson(course.id, selectedModuleId, lessonPayload);
       }
       setNewLesson({ title: '', duration: '', contentType: 'video', content: '', videoUrl: '' });
       setIsLessonDialogOpen(false);
@@ -391,15 +395,24 @@ const InstructorCourseEdit = () => {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label>Content (Markdown supported)</Label>
-                <Textarea
-                  value={newLesson.content}
-                  onChange={(e) => setNewLesson({ ...newLesson, content: e.target.value })}
-                  placeholder="The text content for this lesson..."
-                  rows={6}
-                />
-              </div>
+              {newLesson.contentType === 'video' && (
+                <div className="space-y-2">
+                  <Label>Video URL</Label>
+                  <Input value={newLesson.videoUrl} onChange={(e) => setNewLesson({ ...newLesson, videoUrl: e.target.value })} placeholder="YouTube or Vimeo URL" />
+                </div>
+              )}
+
+              {newLesson.contentType !== 'quiz' && (
+                <div className="space-y-2">
+                  <Label>Content (Markdown supported)</Label>
+                  <Textarea
+                    value={newLesson.content}
+                    onChange={(e) => setNewLesson({ ...newLesson, content: e.target.value })}
+                    placeholder="The text content for this lesson..."
+                    rows={6}
+                  />
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => { setIsLessonDialogOpen(false); setEditingLessonId(null); }}>Cancel</Button>

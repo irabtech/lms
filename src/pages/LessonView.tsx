@@ -127,7 +127,7 @@ const LessonView = () => {
 
                         {/* Lesson Content */}
                         <div className="prose prose-slate max-w-none dark:prose-invert mb-8">
-                            {lesson.content && !lesson.content.trim().startsWith('{') ? (
+                            {lesson.type !== 'quiz' && lesson.content && !lesson.content.trim().startsWith('{') ? (
                                 <div dangerouslySetInnerHTML={{ __html: lesson.content.replace(/\n/g, '<br/>') }} />
                             ) : lesson.type !== 'quiz' ? (
                                 <p className="text-muted-foreground italic">No additional content provided for this lesson.</p>
@@ -135,7 +135,7 @@ const LessonView = () => {
                         </div>
 
                         {/* Quiz Section (Unified inside Lesson View) */}
-                        {(lesson.type === 'quiz' || (lesson as any).quizData) && (
+                        {lesson.type === 'quiz' && (
                             <Card className="mb-12 border-primary/20 bg-primary/5 shadow-sm">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <div>

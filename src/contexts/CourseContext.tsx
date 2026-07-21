@@ -168,7 +168,7 @@ const mapCourseFromApi = (data: any): Course => ({
             duration: l.duration || '',
             videoUrl: l.video_url || '',
             isFree: l.is_free || false,
-            quizData: l.quiz_data || (l.content ? (() => { try { return JSON.parse(l.content); } catch { return undefined; } })() : undefined)
+            quizData: (l.content_type === 'QUIZ' || l.content_type === 'quiz') ? (l.quiz_data || (l.content ? (() => { try { const parsed = JSON.parse(l.content); return parsed && parsed.questions ? parsed : undefined; } catch { return undefined; } })() : undefined)) : undefined
         }))
     })),
     isFree: data.price === 0
